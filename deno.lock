@@ -276,9 +276,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@std/assert@1",
-      "npm:drizzle-orm@~0.36.4",
-      "npm:mysql2@^3.11.5"
+      "jsr:@std/assert@1"
     ]
   }
 }

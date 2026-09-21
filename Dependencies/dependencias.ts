@@ -9,4 +9,20 @@ export {SMTPClient} from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 export * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 export { send } from "https://deno.land/x/oak@v17.2.0/mod.ts";
 
-export { eq } from "npm:drizzle-orm";
+// ORM (npm)
+export { drizzle } from "npm:drizzle-orm@^0.36.4/mysql2";
+export {
+    mysqlTable,
+    int,
+    varchar,
+    text,
+    decimal,
+    datetime,
+    date,
+    tinyint,
+    boolean,
+    timestamp,
+    mysqlEnum,
+} from "npm:drizzle-orm@^0.36.4/mysql-core";
+export { eq, and, or, sql } from "npm:drizzle-orm@^0.36.4";
+export { default as mysql } from "npm:mysql2@^3.11.5/promise";
