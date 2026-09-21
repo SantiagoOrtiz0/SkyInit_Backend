@@ -1,5 +1,4 @@
-import {mysqlTable, int, varchar, text, decimal, datetime, date, tinyint,} from "drizzle-orm/mysql-core";
-import { sql } from "drizzle-orm";
+import { mysqlTable, int, varchar, text, decimal, datetime, date, tinyint, sql } from "../Dependencies/dependencias.ts";
 
 // Catalogo
 
