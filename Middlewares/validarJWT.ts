@@ -1,5 +1,6 @@
 import { VerificarTokenAcceso } from "../Helpers/jwt.ts";
 import { Context, Next } from "../Dependencies/dependencias.ts";
+import { error } from "node:console";
 
 //Middleware para proteger rutas: exige un token valido en Authorization
 export async function authMiddleware(ctx: Context, next: Next) {
@@ -24,15 +25,16 @@ export async function authMiddleware(ctx: Context, next: Next) {
     await next();
 }
 
-//Middleware exige que el usuario autenticado tenga rol Tecnico
-export async function tecnicoMiddleware(ctx: Context, next: Next) {
-    const usuario = ctx.state.user as {rol?: string} | undefined;
+export function rolMiddleware(...rolesPermitidos: string[]) {
+    return async (ctx: Context, next: Next) => {
+        const usuario = ctx.state.user as {rol?: string} | undefined;
 
-    if (!usuario || usuario.rol !== "Tecnico") {
-        ctx.response.status = 403;
-        ctx.response.body = {error: "Acceso restringido"};
-        return;
-    }
+        if (!usuario || !rolesPermitidos.includes(usuario.rol ?? "")) {
+            ctx.response.status = 403;
+            ctx.response.body = {error: "Acceso denegado: Permisos insuficientes"};
+            return;
+        }
 
-    await next();
+        await next();
+    };
 }
