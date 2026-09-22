@@ -99,6 +99,9 @@ export const propiedades = mysqlTable("propiedades", {
         }),
         agenteID: int("AgenteID").references(() => 
             usuarios.usuarioID, {onDelete: "set null"}),
+        estado: varchar("Estado", {length: 20}).notNull().default("Disponible"), // Estado disponible, reservada, en mantenimiento y fuera del mercado
+        destacada: tinyint("Destacada").notNull().default(0),
+        fechaPublicacion: datetime("FechaPublicacion").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const proyectos = mysqlTable("proyectos", {

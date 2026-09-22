@@ -1,6 +1,6 @@
 import { db } from "./conexion.ts";
 import { usuarios, roles } from "./schema.ts";
-import {eq, sql} from "drizzle-orm";
+import { eq, sql } from "../Dependencies/dependencias.ts";
 
 export interface UsuarioCreate {
     Nombre: string;
@@ -73,7 +73,7 @@ export async function crearUsuario(data: UsuarioCreate): Promise<number> {
         correo: data.Correo,
         contrasenaHash: data.Password,
         telefono: data.Telefono ?? null,
-        rolID: data.RolID ?? 5,
+        rolID: data.RolID ?? 3,
         estadoCuenta: "Activa",
         aceptoTerminos: 0,
     });
