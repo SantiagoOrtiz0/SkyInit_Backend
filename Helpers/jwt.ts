@@ -34,7 +34,7 @@ export function setTokenCookie(ctx: Context, token: string): void {
     ctx.cookies.set(COOKIE_NAME, token, {
         httpOnly: true,
         secure: IS_PROD,
-        sameSite: "Strict",
+        sameSite: "strict",
         maxAge: TOKEN_EXPIRY_SECONDS,
         path: "/",
     });
