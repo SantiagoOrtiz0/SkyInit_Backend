@@ -1,5 +1,7 @@
 import { Application, oakCors } from "./Dependencies/dependencias.ts";
 import { serviciosRouter } from "./Router/serviciosRouter.ts";
+import authRouter    from "./Router/authRouter.ts";
+import terminosRouter from "./Router/terminosRouter.ts";
 
 const app = new Application();
 
