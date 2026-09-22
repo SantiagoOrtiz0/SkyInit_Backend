@@ -11,9 +11,8 @@
     "jsr:@std/internal@^1.0.14": "1.0.14",
     "jsr:@std/media-types@1": "1.1.0",
     "jsr:@std/path@1": "1.1.6",
-    "npm:drizzle-orm@*": "0.36.4_mysql2@3.24.3__@types+node@26.1.2_@types+node@26.1.2",
-    "npm:drizzle-orm@~0.36.4": "0.36.4_mysql2@3.24.3__@types+node@26.1.2_@types+node@26.1.2",
-    "npm:mysql2@^3.11.5": "3.24.3_@types+node@26.1.2",
+    "npm:drizzle-orm@~0.36.4": "0.36.4_mysql2@3.24.4__@types+node@26.1.2_@types+node@26.1.2",
+    "npm:mysql2@^3.11.5": "3.24.4_@types+node@26.1.2",
     "npm:path-to-regexp@^6.3.0": "6.3.0"
   },
   "jsr": {
@@ -69,7 +68,7 @@
     "aws-ssl-profiles@1.1.2": {
       "integrity": "sha512-NZKeq9AfyQvEeNlN0zSYAaWrmBffJh3IELMZfRpJVWgrpEbtEpnjvzqBPf+mxoI287JohRDoa+/nsfqqiZmF6g=="
     },
-    "drizzle-orm@0.36.4_mysql2@3.24.3__@types+node@26.1.2_@types+node@26.1.2": {
+    "drizzle-orm@0.36.4_mysql2@3.24.4__@types+node@26.1.2_@types+node@26.1.2": {
       "integrity": "sha512-1OZY3PXD7BR00Gl61UUOFihslDldfH4NFRH2MbP54Yxi0G/PKn4HfO65JYZ7c16DeP3SpM3Aw+VXVG9j6CRSXA==",
       "dependencies": [
         "mysql2"
@@ -99,8 +98,8 @@
     "lru.min@1.1.5": {
       "integrity": "sha512-5J9ysMYUpYIg9RF2vJpy9SinEmSviFSe0GyPpCQ4L5QSkLAgeLXlTAOu2ZwWUU5m+0SBl6gUU1R1ZQB3aKypfA=="
     },
-    "mysql2@3.24.3_@types+node@26.1.2": {
-      "integrity": "sha512-OKfWHkMAg9v06neq8FmSyhbxPQKABN9PAW5G9/bDTXzJBO5xXtkKL0V27vju7HQWk9UD4Od5BZsvCtBTB1CPEw==",
+    "mysql2@3.24.4_@types+node@26.1.2": {
+      "integrity": "sha512-A2olluVlj0mvgyIRRISMEzXc51m+21mRtcMVjJyIpt2GG98+XrC9m9HzsqcMsX2LcnfccJvY5NB22g8fENBnOA==",
       "dependencies": [
         "@types/node",
         "aws-ssl-profiles",
@@ -124,8 +123,8 @@
     "safer-buffer@2.1.2": {
       "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg=="
     },
-    "sql-escaper@1.5.1": {
-      "integrity": "sha512-4toX5E1fQbBrpfXidaHnF0669nkAdETeIPTs2SUjxxD7RRIs9ICG4gtpmfc68JCEKehsdwLFqBu9VlQqZ1P1gg=="
+    "sql-escaper@1.5.2": {
+      "integrity": "sha512-6CKD38c31SENivxOADeMNLdukOnUxUcflKtzVWzace7Riv1v7cAEym5Cx9Q7gYZ3ezIJI7ZpqecQq8cqNeSSFg=="
     },
     "undici-types@8.3.0": {
       "integrity": "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="
