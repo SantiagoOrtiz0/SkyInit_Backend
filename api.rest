@@ -35,3 +35,28 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:8001/constructoras/7
+
+### ============================================================
+###  SkyInit - Módulo Mantenimientos / Reparaciones
+###  Servidor: http://localhost:8001
+### ============================================================
+
+### LOGIN (obtener token JWT)
+POST http://localhost:8001/login
+Content-Type: application/json
+
+{
+    "email": "skyinit2026@gmail.com",
+    "password": "#SkyInit2026"
+}
+
+###
+
+### LISTAR SERVICIOS DE MANTENIMIENTO (requiere token)
+### RF: Listado de servicios de mantenimiento de viviendas
+### RF: Categorías / Precios / Disponibilidad
+GET http://localhost:8001/api/servicios
+Authorization: Bearer 
+Content-Type: application/json
+
+###

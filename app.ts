@@ -11,9 +11,8 @@ app.use(oakCors({
 }));
 
 // Registrar routers
-const routes = [serviciosRouter];
 
-const routes = [constructoraRouter];
+const routes = [constructoraRouter, serviciosRouter, authRouter, terminosRouter];
 routes.forEach(router => {
     app.use(router.routes());
     app.use(router.allowedMethods());
