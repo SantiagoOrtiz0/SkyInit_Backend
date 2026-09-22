@@ -1,0 +1,37 @@
+GET HTTP://localhost:8001/constructoras
+###
+POST http://localhost:8001/constructoras
+Content-Type: application/json
+
+{
+    "nombre": "Constructora Jumper Cramp",
+    "descripcion": "Creamos futuro",
+    "contacto": "Facebook",
+    "telefono": "3124143860",
+    "correo": "constructorajumper@gmail.com",
+    "estado": "Activo",
+    "ciudad": "Duitama",
+    "logo": null,
+    "inmobiliariaID": null,
+    "usuarioID": null
+}
+
+###
+PUT http://localhost:8001/constructoras/12
+Content-Type: application/json
+
+{
+    "nombre": "Constructora Jumper Cramp Actualizada",
+    "descripcion": "Creamos futuro - versión 2",
+    "contacto": "Instagram",
+    "telefono": "3124143860",
+    "correo": "constructorajumper@gmail.com",
+    "estado": "Activo",
+    "ciudad": "Duitama",
+    "logo": null,
+    "inmobiliariaID": null,
+    "usuarioID": null
+}
+
+###
+DELETE http://localhost:8001/constructoras/7
