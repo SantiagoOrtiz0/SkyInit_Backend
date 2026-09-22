@@ -55,9 +55,32 @@ export class Constructora {
         return resultado;
     }
 
+    public async ActualizarConstructora() {
+        const resultado = await db
+        .update(constructoras)
+        .set({
+            inmobiliariaID: this._ObjConstructora?.inmobiliariaID,
+            usuarioID: this._ObjConstructora?.usuarioID,
+            nombre: this._ObjConstructora?.nombre,
+            contacto: this._ObjConstructora?.contacto,
+            telefono: this._ObjConstructora?.telefono,
+            correo: this._ObjConstructora?.correo,
+            estado: this._ObjConstructora?.estado,
+            logo: this._ObjConstructora?.logo,
+            descripcion: this._ObjConstructora?.descripcion,
+            ciudad: this._ObjConstructora?.ciudad,
+        })
+        .where(eq(constructoras.constructoraID, this._idConstructora!));
+
+        return resultado;
+    }
 
 
+    public async EliminarConstructora() {
+        const resultado = await db
+        .delete(constructoras)
+        .where(eq(constructoras.constructoraID, this._idConstructora!));
 
-
-
+        return resultado;
+    }
 }
