@@ -66,25 +66,84 @@ Content-Type: application/json
     "inmobiliariaID": null,
     "usuarioID": null
 }
-
 ###
 DELETE http://localhost:8001/constructoras/7
 
+### ____________________________________________________________
+### PROYECTOS
+### ____________________________________________________________
+
+### Listar proyectos
+GET http://localhost:8001/proyectos
+###
+
+### Listar Proyectos de una Constructora
+GET http://localhost:8001/proyectos/constructora/7
+###
+
+### Consultar Proyecto
+GET http://localhost:8001/proyectos/5
+###
+
+### Proyectos Similares
+GET http://localhost:8001/proyectos/5/similares
+###
+
+### Historial de avances
+GET http://localhost:8001/proyectos/5/avances
+
+###
+
+### Crear Proyecto
+POST http://localhost:8001/proyectos
+Content-Type: application/json
+
+{
+"nombre": "Torre San Lorenzo",
+"estadoProyectoID": 1,
+"porcentajeAvance": "15.00",
+"fechaInicio": "2026-10-01",
+"fechaFin": "2027-12-30",
+"constructoraID": 7,
+"descripcion": "Proyecto residencial ubicado en Duitama",
+"ubicacion": "Duitama"
+}
+###
+
+### Editar Proyecto
+PUT http://localhost:8001/proyectos/16
+Content-Type: application/json
+
+{
+"nombre": "Torre San Lorenzo Actualizado",
+"estadoProyectoID": 2,
+"porcentajeAvance": "35.00",
+"fechaInicio": "2026-10-01",
+"fechaFin": "2027-12-30",
+"constructoraID": 8,
+"descripcion": "Proyecto actualizado",
+"ubicacion": "Duitama"
+}
+###
+
+### Registrar avance
+POST http://localhost:8001/proyectos/5/avances
+Content-Type: application/json
+
+{
+"porcentaje": "40.00",
+"nota": "Finalizada la estructura principal"
+}
+###
+
+### Eliminar Proyecto
+DELETE http://localhost:8001/proyectos/16
 ### ============================================================
 ###  SkyInit - Módulo Mantenimientos / Reparaciones
 ###  Servidor: http://localhost:8001
 ### ============================================================
 
-### LOGIN (obtener token JWT)
-POST http://localhost:8001/login
-Content-Type: application/json
 
-{
-    "email": "skyinit2026@gmail.com",
-    "password": "#SkyInit2026"
-}
-
-###
 
 ### LISTAR SERVICIOS DE MANTENIMIENTO (requiere token)
 ### RF: Listado de servicios de mantenimiento de viviendas
