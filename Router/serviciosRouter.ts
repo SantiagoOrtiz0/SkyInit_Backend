@@ -6,4 +6,5 @@ const serviciosRouter = new Router();
 
 serviciosRouter.get("/api/servicios", authMiddleware, getServicios);
 
+
 export { serviciosRouter };

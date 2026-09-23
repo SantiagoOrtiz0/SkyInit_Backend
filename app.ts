@@ -7,7 +7,8 @@ import terminosRouter from "./Router/terminosRouter.ts";
 const app = new Application();
 
 app.use(oakCors({
-    origin: "*"
+    origin: "http://localhost:4321",
+    credentials: true,   // necesario para que las cookies de sesión pasen
 }));
 
 // Registrar routers
