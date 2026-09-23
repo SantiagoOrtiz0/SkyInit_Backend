@@ -80,8 +80,8 @@ POST http://localhost:8001/login
 Content-Type: application/json
 
 {
-    "email": "skyinit2026@gmail.com",
-    "password": "#SkyInit2026"
+    "email": "jeffryrodriguez117@gmail.com",
+    "password": "J1054285196j#"
 }
 
 ###
