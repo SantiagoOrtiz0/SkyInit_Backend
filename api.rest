@@ -1,3 +1,37 @@
+
+### ________________________________________________
+### AUTH
+### _________________________________________________
+### Registro 
+POST http://localhost:8001/auth/registro
+Content-Type: application/json
+
+{
+    "Nombre": "Eduardo Gomez",
+    "Correo": "EduardoG@gmail.com",
+    "Password": "12345678",
+    "Confirmar": "12345678",
+    "Telefono": "3108907896"
+}
+### Login
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+    "Correo": "skyinit2026@gmail.com",
+    "Password": "#SkyInit2026"
+}
+### 
+GET http://localhost:8001/auth/perfil
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+###
+POST http://localhost:8001/auth/logout
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+
+### ____________________________________________________
+### CONSTRUCTORAS
+### ____________________________________________________
+###
 GET HTTP://localhost:8001/constructoras
 ###
 POST http://localhost:8001/constructoras
