@@ -188,4 +188,34 @@ export class Propiedad {
         return (resultado as any).affectedRows ?? 0;
     }
 
+    public async SeleccionarPorConstructora(constructoraID: number) {
+        return await db
+        .select({
+            propiedadID: propiedades.propiedadID,
+            titulo: propiedades.titulo,
+            precio: propiedades.precio,
+            habitaciones: propiedades.habitaciones,
+            direccion: propiedades.direccion,
+            ciudad: propiedades.ciudad,
+            estado: propiedades.estado,
+            destacada: propiedades.destacada,
+            fechaPublicacion: propiedades.fechaPublicacion,
+            tipoOperacion: tiposoperacion.descripcion,
+        })
+        .from(propiedades)
+        .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID))
+        .where(eq(propiedades.constructoraID, constructoraID))
+        .orderBy(desc(propiedades.fechaPublicacion));
+    }
+
+    public async PerteneceAConstructora(constructoraID: number): Promise<boolean> {
+        const [fila] = await db
+        .select({ constructoraID: propiedades.constructoraID })
+        .from(propiedades)
+        .where(eq(propiedades.propiedadID, this._idPropiedad!))
+        .limit(1);
+
+        return !!fila && fila.constructoraID === constructoraID;
+    }
+
 }

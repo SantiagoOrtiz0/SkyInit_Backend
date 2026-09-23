@@ -69,6 +69,40 @@ Content-Type: application/json
 ###
 DELETE http://localhost:8001/constructoras/7
 
+###
+### Registrar usuario de prueba Constructora
+POST http://localhost:8001/auth/registro
+Content-Type: application/json
+
+{
+  "Nombre": "Constructora Test",
+  "Correo": "constructora.test@skyinit.com",
+  "Password": "Test1234!",
+  "Confirmar": "Test1234!",
+  "Telefono": "3000000000"
+}
+
+### Login Constructora
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+  "Correo": "constructora.test@skyinit.com",
+  "Password": "Test1234!"
+}
+
+### Dashboard
+GET http://localhost:8001/panel/constructora/dashboard
+
+### Perfil
+GET http://localhost:8001/panel/constructora/perfil
+
+### Proyectos de mi constructora
+GET http://localhost:8001/panel/constructora/proyectos
+
+### Propiedades de mi constructora
+GET http://localhost:8001/panel/constructora/propiedades
+
 ### ____________________________________________________________
 ### PROYECTOS
 ### ____________________________________________________________

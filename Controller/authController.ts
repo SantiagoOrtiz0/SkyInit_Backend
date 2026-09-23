@@ -75,8 +75,6 @@ export async function registro (ctx: Context) {
 // ---LOGIN---
 export async function login(ctx: Context) {
 
-console.log("Conectando a la base de datos...");
-
     try {
         const body = await ctx.request.body.json();
         const{Correo, Password} = body;
