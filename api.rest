@@ -7,8 +7,8 @@ POST http://localhost:8001/auth/registro
 Content-Type: application/json
 
 {
-    "Nombre": "Eduardo Gomez",
-    "Correo": "EduardoG@gmail.com",
+    "Nombre": "JeffryR",
+    "Correo": "jeffry@gmail.com",
     "Password": "12345678",
     "Confirmar": "12345678",
     "Telefono": "3108907896"
@@ -18,8 +18,8 @@ POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-    "Correo": "skyinit2026@gmail.com",
-    "Password": "#SkyInit2026"
+    "Correo": "jeffry@gmail.com",
+    "Password": "12345678"
 }
 ### 
 GET http://localhost:8001/auth/perfil
