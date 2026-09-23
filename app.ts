@@ -3,6 +3,7 @@ import { constructoraRouter } from "./Router/constructoraRouter.ts";
 import { serviciosRouter } from "./Router/serviciosRouter.ts";
 import authRouter    from "./Router/authRouter.ts";
 import terminosRouter from "./Router/terminosRouter.ts";
+import propiedadesRouter from "./Router/propiedadesRouter.ts";
 
 const app = new Application();
 
@@ -11,7 +12,7 @@ app.use(oakCors({
 }));
 
 // Registrar routers
-const routes = [serviciosRouter,constructoraRouter,authRouter,terminosRouter];
+const routes = [serviciosRouter,constructoraRouter,authRouter,terminosRouter,propiedadesRouter];
 
 routes.forEach(router => {
     app.use(router.routes());

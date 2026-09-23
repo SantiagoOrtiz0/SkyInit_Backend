@@ -1,3 +1,37 @@
+
+### ________________________________________________
+### AUTH
+### _________________________________________________
+### Registro 
+POST http://localhost:8001/auth/registro
+Content-Type: application/json
+
+{
+    "Nombre": "Eduardo Gomez",
+    "Correo": "EduardoG@gmail.com",
+    "Password": "12345678",
+    "Confirmar": "12345678",
+    "Telefono": "3108907896"
+}
+### Login
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+    "Correo": "skyinit2026@gmail.com",
+    "Password": "#SkyInit2026"
+}
+### 
+GET http://localhost:8001/auth/perfil
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+###
+POST http://localhost:8001/auth/logout
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+
+### ____________________________________________________
+### CONSTRUCTORAS
+### ____________________________________________________
+###
 GET HTTP://localhost:8001/constructoras
 ###
 POST http://localhost:8001/constructoras
@@ -35,3 +69,62 @@ Content-Type: application/json
 
 ###
 DELETE http://localhost:8001/constructoras/7
+###
+###_________________________________________
+### PROPIEDADES
+###_________________________________________
+
+### Listar propiedades (Sin filtros)
+GET http://localhost:8001/api/propiedades
+### Listar propiedades (Con filtrado)
+GET http://localhost:8001/api/propiedades?ciudad=Duitama&tipoOperacionID=2&habitaciones=3&precioMin=100000000&precioMax=300000000&orden=precio_asc
+### Listar propiedades destacadas
+GET http://localhost:8001/api/propiedades/destacadas
+
+###
+GET http://localhost:8001/api/propiedades/agente/4
+### Consultar propiedades por id
+GET http://localhost:8001/api/propiedades/7
+
+### Listar propiedades similares
+GET http://localhost:8001/api/propiedades/7/similares
+
+### Crear Propiedad (requiere token de Agente o Administrador)
+POST http://localhost:8001/api/propiedades
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjIxZDQxNDlhLTNhYTAtNDAwYy05YTY1LTBkODRkMzhlYTIxMyIsImV4cCI6MTc5MDExNjI0MX0.qwFZnPETBE6h7tmh9lb9gJt4siGYgF99waJF_IpSMi0
+
+{
+    "titulo": "Apartamento de prueba DENO",
+    "descripcion": "Prueba desde API REST",
+    "precio": 25000000,
+    "tipoOperacionID": 2,
+    "habitaciones": 3,
+    "direccion": "Calle 20 #10-30",
+    "ciudad": "Duitama",
+    "constructoraID": 7,
+    "estado": "Disponible",
+    "destacada": true
+}
+
+### Editar propiedad (Requiere token de Agente o administrador)
+PUT http://localhost:8001/api/propiedades/18
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjIxZDQxNDlhLTNhYTAtNDAwYy05YTY1LTBkODRkMzhlYTIxMyIsImV4cCI6MTc5MDExNjI0MX0.qwFZnPETBE6h7tmh9lb9gJt4siGYgF99waJF_IpSMi0
+
+{
+    "titulo": "Apartamento de prueba (editado)",
+    "descripcion": "Descripcion actualizada",
+    "precio": 260000000,
+    "tipoOperacionID": 2,
+    "habitaciones": 3,
+    "direccion": "Calle 20 #10-30",
+    "ciudad": "Duitama",
+    "constructoraID": 7,
+    "estado": "Reservada",
+    "destacada": false
+}
+
+### Eliminar propiedad (requiere token de agente o administrador)
+DELETE http://localhost:8001/api/propiedades/18
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjIxZDQxNDlhLTNhYTAtNDAwYy05YTY1LTBkODRkMzhlYTIxMyIsImV4cCI6MTc5MDExNjI0MX0.qwFZnPETBE6h7tmh9lb9gJt4siGYgF99waJF_IpSMi0
