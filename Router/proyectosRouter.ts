@@ -1,6 +1,7 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import { listarProyectos, listarPorConstructora, consultarProyecto, listarSimilares, listarAvances, crearProyecto, editarProyecto, registrarAvance, eliminarProyecto } from "../Controller/proyectosController.ts";
 import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
+import { constructoraScopeMiddleware } from "../Middlewares/constructoraScope.ts";
 
 const proyectosRouter = new Router();
 
@@ -17,6 +18,6 @@ proyectosRouter.put("/proyectos/:id", authMiddleware,rolMiddleware ("Constructor
 proyectosRouter.delete("/proyectos/:id", authMiddleware,rolMiddleware ("Constructora", "Administrador"), eliminarProyecto);
 
 // Ruta privada solo para constructora
-proyectosRouter.post("/proyectos/:id/avances", authMiddleware,rolMiddleware ("Constructora"), registrarAvance);
+proyectosRouter.post("/proyectos/:id/avances", authMiddleware,rolMiddleware ("Constructora"), constructoraScopeMiddleware, registrarAvance);
 
 export default proyectosRouter;
