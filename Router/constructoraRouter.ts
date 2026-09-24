@@ -1,4 +1,5 @@
 import { Router } from "../Dependencies/dependencias.ts";
+import {authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
 import { getConstructoras,getConstructorasporId,postConstructora,putConstructora, deleteConstructora } from "../Controller/constructoraController.ts";
 
 const constructoraRouter = new Router();
