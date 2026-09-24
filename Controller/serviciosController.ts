@@ -1,14 +1,15 @@
 import { Context } from "../Dependencies/dependencias.ts";
-import { obtenerServiciosActivos } from "../Model/serviciosModel.ts";
+import { obtenerServiciosAgrupadosPorInmobiliaria } from "../Model/serviciosModel.ts";
 
+// Catalogo publico de servicios de mantenimiento, agrupados por la inmobiliaria que los subio
 export async function getServicios(ctx: Context) {
     try {
-        const servicios = await obtenerServiciosActivos();
+        const grupos = await obtenerServiciosAgrupadosPorInmobiliaria();
 
         ctx.response.status = 200;
         ctx.response.body = {
             ok: true,
-            data: servicios,
+            data: grupos,
         };
     } catch (error) {
         console.error("[getServicios] Error al obtener servicios:", error);
