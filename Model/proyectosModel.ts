@@ -1,13 +1,13 @@
 import { eq, and, like, desc, asc } from "../Dependencies/dependencias.ts";
 import { db } from "./conexion.ts";
-import { proyectos, estadosproyecto, constructoras, imagenesproyecto, avancesproyecto} from "./schema.ts";
+import { proyectos, estadosproyecto, constructoras, imagenesproyecto, avancesproyecto, usuarios} from "./schema.ts";
 
 interface ProyectoData {
-    nombre: string;
-    estadoProyectoID: number;
+    nombre?: string;
+    estadoProyectoID?: number;
     porcentajeAvance?: string;
-    fechaInicio?: Date | null;
-    fechaFin?: Date | null;
+    fechaInicio?:string| Date | null;
+    fechaFin?: string| Date | null;
     constructoraID?: number | null;
     descripcion?: string | null;
     ubicacion?: string | null;
@@ -122,25 +122,44 @@ export class Proyecto {
     }
 
     // Registrar un nuevo avance del proyecto (constructora)
-    public async RegistrarAvance(usuarioID: number, porcentaje: string, nota?: string | null) {
+        public async RegistrarAvance(
+        usuarioID: number,
+        porcentaje: number | string,
+        nota?: string | null,
+    ) {
+        const pct = String(porcentaje);
+
         const [resultado] = await db.insert(avancesproyecto).values({
             proyectoID: this._idProyecto!,
-            usuarioID: usuarioID,
-            porcentaje: porcentaje,
+            usuarioID,
+            porcentaje: pct,
             nota: nota ?? null,
         });
-        return (resultado as any).affectedRows ?? 0;
+
+        // Actualiza el % actual del proyecto (importante)
+        await db
+            .update(proyectos)
+            .set({ porcentajeAvance: pct })
+            .where(eq(proyectos.proyectoID, this._idProyecto!));
+
+        (resultado as { affectedRows?: number }).affectedRows
     }
 
-    // Registrar un nuevo proyecto (constructora, administrador)
     public async InsertarProyecto(): Promise<number> {
         const proyecto = this._ObjProyecto!;
+
+        const toDate = (v: string | Date | null | undefined): Date | null => {
+        if (v == null || v === "") return null;
+        if (v instanceof Date) return v;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;};
+
         const [resultado] = await db.insert(proyectos).values({
-            nombre: proyecto.nombre,
-            estadoProyectoID: proyecto.estadoProyectoID,
+            nombre: proyecto.nombre!,
+            estadoProyectoID: proyecto.estadoProyectoID ?? 1,
             porcentajeAvance: proyecto.porcentajeAvance ?? "0.00",
-            fechaInicio: proyecto.fechaInicio,
-            fechaFin: proyecto.fechaFin,
+            fechaInicio:toDate( proyecto.fechaInicio),
+            fechaFin:toDate( proyecto.fechaFin),
             constructoraID: proyecto.constructoraID,
             descripcion: proyecto.descripcion,
             ubicacion: proyecto.ubicacion,
@@ -148,17 +167,24 @@ export class Proyecto {
         return (resultado as any).affectedRows ?? 0;
     }
 
-    // Editar proyectos
     public async ActualizarProyecto(): Promise<number> {
         const proyecto = this._ObjProyecto!;
+
+
+        const toDate = (v: string | Date | null | undefined): Date | null => {
+        if (v == null || v === "") return null;
+        if (v instanceof Date) return v;
+        const d = new Date(v);
+        return isNaN(d.getTime()) ? null : d;};
+
         const [resultado] = await db
         .update(proyectos)
         .set({
             nombre: proyecto.nombre,
             estadoProyectoID: proyecto.estadoProyectoID,
             porcentajeAvance: proyecto.porcentajeAvance,
-            fechaInicio: proyecto.fechaInicio,
-            fechaFin: proyecto.fechaFin,
+            fechaInicio:toDate( proyecto.fechaInicio),
+            fechaFin:toDate( proyecto.fechaFin),
             constructoraID: proyecto.constructoraID,
             descripcion: proyecto.descripcion,
             ubicacion: proyecto.ubicacion,
@@ -174,4 +200,67 @@ export class Proyecto {
         .where(eq(proyectos.proyectoID, this._idProyecto!));
         return (resultado as any).affectedRows ?? 0; 
     }
+
+    public async PerteneceAConstructora(constructoraID: number): Promise<boolean> {
+        const [fila] = await db
+        .select({ constructoraID: proyectos.constructoraID })
+        .from(proyectos)
+        .where(eq(proyectos.proyectoID, this._idProyecto!))
+        .limit(1);
+
+        return !!fila && fila.constructoraID === constructoraID;
+    }
+
+    public async ListarAvances() {
+        return await db
+        .select({
+            avanceID: avancesproyecto.avanceID,
+            porcentaje: avancesproyecto.porcentaje,
+            nota: avancesproyecto.nota,
+            fechaRegistro: avancesproyecto.fechaRegistro,
+            registradoPor: usuarios.nombre,
+        })
+        .from(avancesproyecto)
+        .innerJoin(usuarios, eq(avancesproyecto.usuarioID, usuarios.usuarioID))
+        .where(eq(avancesproyecto.proyectoID, this._idProyecto!))
+        .orderBy(desc(avancesproyecto.fechaRegistro));
+    }
+
+    public async ListarImagenes() {
+        return await db
+        .select({ imagenID: imagenesproyecto.imagenID, url: imagenesproyecto.url })
+        .from(imagenesproyecto)
+        .where(eq(imagenesproyecto.proyectoID, this._idProyecto!));
+    }
+
+    public async InsertarImagen(url: string): Promise<number> {
+        const [resultado] = await db.insert(imagenesproyecto).values({
+            proyectoID: this._idProyecto!,
+            url,
+        });
+        return Number((resultado as any).insertId ?? 0);
+    }
+
+    /** Devuelve la URL eliminada (o null) para poder borrar el archivo en disco */
+    public async EliminarImagen(imagenID: number): Promise<string | null> {
+        const [fila] = await db
+        .select({ url: imagenesproyecto.url, proyectoID: imagenesproyecto.proyectoID })
+        .from(imagenesproyecto)
+        .where(eq(imagenesproyecto.imagenID, imagenID))
+        .limit(1);
+
+        if (!fila || fila.proyectoID !== this._idProyecto) return null;
+
+        await db.delete(imagenesproyecto).where(eq(imagenesproyecto.imagenID, imagenID));
+        return fila.url;
+    }
+
+    public async CambiarEstado(estadoProyectoID: number): Promise<number> {
+        const [resultado] = await db
+        .update(proyectos)
+        .set({ estadoProyectoID })
+        .where(eq(proyectos.proyectoID, this._idProyecto!));
+        return (resultado as any).affectedRows ?? 0;
+    }
+
 }
