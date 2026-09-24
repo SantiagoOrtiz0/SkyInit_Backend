@@ -1,3 +1,37 @@
+
+### ________________________________________________
+### AUTH
+### _________________________________________________
+### Registro 
+POST http://localhost:8001/auth/registro
+Content-Type: application/json
+
+{
+    "Nombre": "JeffryR",
+    "Correo": "jeffry@gmail.com",
+    "Password": "12345678",
+    "Confirmar": "12345678",
+    "Telefono": "3108907896"
+}
+### Login
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+    "Correo": "jeffry@gmail.com",
+    "Password": "12345678"
+}
+### 
+GET http://localhost:8001/auth/perfil
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+###
+POST http://localhost:8001/auth/logout
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+
+### ____________________________________________________
+### CONSTRUCTORAS
+### ____________________________________________________
+###
 GET HTTP://localhost:8001/constructoras
 ###
 POST http://localhost:8001/constructoras
@@ -32,6 +66,124 @@ Content-Type: application/json
     "inmobiliariaID": null,
     "usuarioID": null
 }
-
 ###
 DELETE http://localhost:8001/constructoras/7
+
+###
+### Registrar usuario de prueba Constructora
+POST http://localhost:8001/auth/registro
+Content-Type: application/json
+
+{
+  "Nombre": "Constructora Test",
+  "Correo": "constructora.test@skyinit.com",
+  "Password": "Test1234!",
+  "Confirmar": "Test1234!",
+  "Telefono": "3000000000"
+}
+
+### Login Constructora
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+  "Correo": "constructora.test@skyinit.com",
+  "Password": "Test1234!"
+}
+
+### Dashboard
+GET http://localhost:8001/panel/constructora/dashboard
+
+### Perfil
+GET http://localhost:8001/panel/constructora/perfil
+
+### Proyectos de mi constructora
+GET http://localhost:8001/panel/constructora/proyectos
+
+### Propiedades de mi constructora
+GET http://localhost:8001/panel/constructora/propiedades
+
+### ____________________________________________________________
+### PROYECTOS
+### ____________________________________________________________
+
+### Listar proyectos
+GET http://localhost:8001/proyectos
+###
+
+### Listar Proyectos de una Constructora
+GET http://localhost:8001/proyectos/constructora/7
+###
+
+### Consultar Proyecto
+GET http://localhost:8001/proyectos/5
+###
+
+### Proyectos Similares
+GET http://localhost:8001/proyectos/5/similares
+###
+
+### Historial de avances
+GET http://localhost:8001/proyectos/5/avances
+
+###
+
+### Crear Proyecto
+POST http://localhost:8001/proyectos
+Content-Type: application/json
+
+{
+"nombre": "Torre San Lorenzo",
+"estadoProyectoID": 1,
+"porcentajeAvance": "15.00",
+"fechaInicio": "2026-10-01",
+"fechaFin": "2027-12-30",
+"constructoraID": 7,
+"descripcion": "Proyecto residencial ubicado en Duitama",
+"ubicacion": "Duitama"
+}
+###
+
+### Editar Proyecto
+PUT http://localhost:8001/proyectos/16
+Content-Type: application/json
+
+{
+"nombre": "Torre San Lorenzo Actualizado",
+"estadoProyectoID": 2,
+"porcentajeAvance": "35.00",
+"fechaInicio": "2026-10-01",
+"fechaFin": "2027-12-30",
+"constructoraID": 8,
+"descripcion": "Proyecto actualizado",
+"ubicacion": "Duitama"
+}
+###
+
+### Registrar avance
+POST http://localhost:8001/proyectos/5/avances
+Content-Type: application/json
+
+{
+"porcentaje": "40.00",
+"nota": "Finalizada la estructura principal"
+}
+###
+
+### Eliminar Proyecto
+DELETE http://localhost:8001/proyectos/16
+### ============================================================
+###  SkyInit - Módulo Mantenimientos / Reparaciones
+###  Servidor: http://localhost:8001
+### ============================================================
+
+
+
+### LISTAR SERVICIOS DE MANTENIMIENTO (requiere token)
+### RF: Listado de servicios de mantenimiento de viviendas
+### RF: Categorías / Precios / Disponibilidad
+GET http://localhost:8001/api/servicios
+Authorization: Bearer 
+Content-Type: application/json
+
+###

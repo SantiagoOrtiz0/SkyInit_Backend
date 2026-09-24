@@ -110,9 +110,6 @@ export const postConstructora = async (ctx:Context)=>{
 
         await constructora.CrearConstructora();
 
-
-        await constructora.CrearConstructora();
-
         response.status = 201;
         response.body = {
             success: true,

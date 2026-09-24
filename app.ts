@@ -3,15 +3,20 @@ import { constructoraRouter } from "./Router/constructoraRouter.ts";
 import { serviciosRouter } from "./Router/serviciosRouter.ts";
 import authRouter    from "./Router/authRouter.ts";
 import terminosRouter from "./Router/terminosRouter.ts";
+import propiedadesRouter from "./Router/propiedadesRouter.ts";
+import proyectosRouter from "./Router/proyectosRouter.ts";
+import { constructoraPanelRouter } from "./Router/constructoraPanelRouter.ts";
 
 const app = new Application();
 
 app.use(oakCors({
-    origin: "*"
+    origin: "http://localhost:4321",
+    credentials: true,   // necesario para que las cookies de sesión pasen
 }));
 
 // Registrar routers
-const routes = [constructoraRouter, serviciosRouter, authRouter, terminosRouter];
+const routes = [serviciosRouter,constructoraRouter,authRouter,terminosRouter,propiedadesRouter, proyectosRouter,constructoraPanelRouter];
+
 routes.forEach(router => {
     app.use(router.routes());
     app.use(router.allowedMethods());

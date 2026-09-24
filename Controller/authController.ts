@@ -74,6 +74,7 @@ export async function registro (ctx: Context) {
 
 // ---LOGIN---
 export async function login(ctx: Context) {
+
     try {
         const body = await ctx.request.body.json();
         const{Correo, Password} = body;
