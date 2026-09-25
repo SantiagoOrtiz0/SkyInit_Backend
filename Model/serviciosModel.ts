@@ -118,14 +118,25 @@ export interface NuevaSolicitudServicio {
     notas?: string | null;
 }
 
+// ID del estado "Pendiente" en estadosreparacion
+const ESTADO_PENDIENTE_ID = 1;
+
 // Crea una solicitud de servicio de mantenimiento y devuelve el ID generado
 export async function crearSolicitudServicio(datos: NuevaSolicitudServicio): Promise<number> {
+
+    const [servicio] = await db
+        .select({ inmobiliariaID: serviciosmantenimiento.inmobiliariaID })
+        .from(serviciosmantenimiento)
+        .where(eq(serviciosmantenimiento.servicioID, datos.servicioID))
+        .limit(1);
+
     const resultado = await db.insert(serviciossolicitados).values({
         servicioID: datos.servicioID,
+        inmobiliariaID: servicio?.inmobiliariaID ?? null,
         usuarioID: datos.usuarioID,
         propiedadID: datos.propiedadID ?? null,
         notas: datos.notas ?? null,
-        // estadoReparacionID queda null: aun no hay un tecnico/estado asignado a la solicitud
+        estadoReparacionID: ESTADO_PENDIENTE_ID,
     });
 
     return Number(resultado[0].insertId);

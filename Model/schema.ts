@@ -321,6 +321,13 @@ export const serviciossolicitados = mysqlTable("serviciossolicitados", {
   servicioID: int("ServicioID")
     .notNull()
     .references(() => serviciosmantenimiento.servicioID, { onDelete: "cascade" }),
+  // Inmobiliaria que ofrecia el servicio al momento de la solicitud (heredada de
+  // serviciosmantenimiento.InmobiliariaID). La columna ya existe en la BD real
+  // (con FK ON DELETE SET NULL) pero faltaba declararla aqui, por eso nunca se
+  // leia ni se escribia desde el backend.
+  inmobiliariaID: int("InmobiliariaID").references(() => inmobiliarias.inmobiliariaID, {
+    onDelete: "set null",
+  }),
   // Opcional: el formulario publico de "Solicitar servicio" no pide una propiedad especifica,
   // por eso se relaja a nullable (antes era NOT NULL y rompia el insert).
   propiedadID: int("PropiedadID").references(() => propiedades.propiedadID, {
