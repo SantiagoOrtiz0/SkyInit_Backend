@@ -7,14 +7,23 @@ POST http://localhost:8001/auth/registro
 Content-Type: application/json
 
 {
-    "Nombre": "JeffryR",
-    "Correo": "jeffry@gmail.com",
-    "Password": "12345678",
-    "Confirmar": "12345678",
-    "Telefono": "3108907896"
+    "Nombre": "Constructora",
+    "Correo": "constructorapara@gmail.com",
+    "Password": "#SkyInit2026",
+    "Confirmar": "#SkyInit2026",
+    "Telefono": "3123190796"
 }
 ### Login
 POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+    "Correo": "skyinit2026@gmail.com",
+    "Password": "#SkyInit2026"
+}
+
+### Logout
+POST http://localhost:8001//auth/logout
 Content-Type: application/json
 
 {
@@ -26,7 +35,7 @@ GET http://localhost:8001/auth/perfil
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
 ###
 POST http://localhost:8001/auth/logout
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiI5NGE0NThiNi01Mzc4LTQyN2UtODljOC1lMjI3ZGI1Y2NiMTYiLCJleHAiOjE3OTAzNTk4NTF9.FLns2avVU9x_HGVmOFc-1_gbXs_SbpZjXUF-eIE_Fts
 
 ### ____________________________________________________
 ### CONSTRUCTORAS
@@ -51,7 +60,7 @@ Content-Type: application/json
 }
 
 ###
-PUT http://localhost:8001/constructoras/12
+PUT http://localhost:8001/constructoras/11
 Content-Type: application/json
 
 {
@@ -67,7 +76,7 @@ Content-Type: application/json
     "usuarioID": null
 }
 ###
-DELETE http://localhost:8001/constructoras/7
+DELETE http://localhost:8001/constructoras/11
 
 ###
 ### Registrar usuario de prueba Constructora
@@ -120,7 +129,7 @@ GET http://localhost:8001/proyectos/5
 ###
 
 ### Proyectos Similares
-GET http://localhost:8001/proyectos/5/similares
+GET http://localhost:8001/proyectos/10/similares
 ###
 
 ### Historial de avances
@@ -131,6 +140,7 @@ GET http://localhost:8001/proyectos/5/avances
 ### Crear Proyecto
 POST http://localhost:8001/proyectos
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZmMDNhMjZiLTJlYmYtNGRjOS05MGNiLTVjYWRjYzQ0Y2JlZiIsImV4cCI6MTc5MDI4NzEwNn0.g7BEK5DK8wDdBKqYYwsuFJA0Pa50oSIaKfzhn85AZYI
 
 {
 "nombre": "Torre San Lorenzo",
@@ -145,11 +155,13 @@ Content-Type: application/json
 ###
 
 ### Editar Proyecto
-PUT http://localhost:8001/proyectos/16
+PUT http://localhost:8001/proyectos/17
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZmMDNhMjZiLTJlYmYtNGRjOS05MGNiLTVjYWRjYzQ0Y2JlZiIsImV4cCI6MTc5MDI4NzEwNn0.g7BEK5DK8wDdBKqYYwsuFJA0Pa50oSIaKfzhn85AZYI
+
 
 {
-"nombre": "Torre San Lorenzo Actualizado",
+"nombre": "Torre San Lorenzo Actual",
 "estadoProyectoID": 2,
 "porcentajeAvance": "35.00",
 "fechaInicio": "2026-10-01",
@@ -171,7 +183,7 @@ Content-Type: application/json
 ###
 
 ### Eliminar Proyecto
-DELETE http://localhost:8001/proyectos/16
+DELETE http://localhost:8001/proyectos/17
 ### ============================================================
 ###  SkyInit - Módulo Mantenimientos / Reparaciones
 ###  Servidor: http://localhost:8001
@@ -187,3 +199,4 @@ Authorization: Bearer
 Content-Type: application/json
 
 ###
+GET http://localhost:8001/api/servicios/1

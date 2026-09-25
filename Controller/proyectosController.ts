@@ -105,7 +105,7 @@ export const listarProyectos = async (ctx:Context) => {
     };
     
 
-    // Crear proyecto (Privado y protegido el acceso unicamente debe ser para constructora y administrador)
+    // Crear proyecto (Privado y protegido el acceso unicamente debe ser para administrador)
     export const crearProyecto = async (ctx:Context) => {
         try {
             const body = await ctx.request.body.json();
@@ -117,8 +117,7 @@ export const listarProyectos = async (ctx:Context) => {
                 return;
             }
 
-            const usuario = (ctx.state as any).user;
-            const idConstructora = constructoraID ?? Number(usuario?.constructoraID);
+           const idConstructora = constructoraID;
 
             if (!idConstructora) {
                 ctx.response.status = 400;
@@ -158,6 +157,24 @@ export const listarProyectos = async (ctx:Context) => {
     export const editarProyecto = async (ctx:any) => {
         try {
             const {id} = ctx.params;
+            const usuario = (ctx.state as any).user;
+
+            const modeloConsulta = new Proyecto(null, Number(id));
+            const existente = await modeloConsulta.ConsultarProyecto();
+
+            if (!existente) {
+                ctx.response.status = 404;
+                ctx.response.body = {error: "Proyecto no encontrado"};
+                return;
+            }
+
+            const esAdministrador = usuario?.rol === "Administrador";
+            if (!esAdministrador && existente.constructoraID !== (ctx.state as any).constructoraID) {
+                ctx.response.status = 403;
+                ctx.response.body = {error: "No tienes permisos para editar este proyecto"};
+                return;
+            }
+
             const body = await ctx.request.body.json();
             const {nombre, estadoProyectoID, porcentajeAvance, fechaInicio, fechaFin, constructoraID, descripcion, ubicacion} = body;
 
@@ -166,14 +183,14 @@ export const listarProyectos = async (ctx:Context) => {
                 ctx.response.body = {error: "Nombre y estadoProyectoID son obligatorios"};
                 return;
             }
-
+            const idConstructora = esAdministrador ? (constructoraID ?? existente.constructoraID) : existente.constructoraID;
             const proyectoEditado = new Proyecto({
                 nombre,
                 estadoProyectoID: Number(estadoProyectoID),
                 porcentajeAvance: porcentajeAvance ? String(porcentajeAvance) : undefined,
                 fechaInicio: fechaInicio ? new Date(fechaInicio) : null,
                 fechaFin: fechaFin ? new Date(fechaFin) : null,
-                constructoraID: constructoraID ?? null,
+                constructoraID: idConstructora,
                 descripcion: descripcion ?? null,
                 ubicacion: ubicacion ?? null,
             },
@@ -218,6 +235,19 @@ export const listarProyectos = async (ctx:Context) => {
                 }
 
                 const modeloProyecto = new Proyecto(null, Number(id));
+
+                const existente = await modeloProyecto.ConsultarProyecto();
+                if (!existente) {
+                    ctx.response.status = 404;
+                    ctx.response.body = {error: "Proyecto no encontrado"};
+                    return;
+                }
+                if (existente.constructoraID !== (ctx.state as any).constructoraID) {
+                    ctx.response.status = 403;
+                    ctx.response.body = {error: "No tienes permisos para registrar avances en este proyecto"};
+                    return;
+                }
+
                 const filasAfectadas = await modeloProyecto.RegistrarAvance(idUsuario, String(porcentaje), nota ?? null);
 
                 if (filasAfectadas > 0) {
@@ -234,11 +264,18 @@ export const listarProyectos = async (ctx:Context) => {
         }
     };
 
-    // Eliminar proyecto (Privado y protegido. El acceso debe ser unicamente para constructora y administrador)
+    // Solo administrador puede eliminar proyectos
     export const eliminarProyecto = async (ctx:any) => {
         try {
             const {id} = ctx.params;
             const modeloProyecto = new Proyecto(null, Number(id));
+            const existente = await modeloProyecto.ConsultarProyecto();
+            if (!existente) {
+                ctx.response.status = 404;
+                ctx.response.body = {error: "Proyecto no encontrado"};
+                return;
+            }
+
             const filasAfectadas = await modeloProyecto.EliminarProyecto();
 
             if (filasAfectadas > 0) {
