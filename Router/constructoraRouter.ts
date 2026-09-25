@@ -5,10 +5,10 @@ import { getConstructoras,getConstructorasporId,postConstructora,putConstructora
 const constructoraRouter = new Router();
 
 constructoraRouter
-    .get("/constructoras", getConstructoras)
-    .get("/constructoras/:id", getConstructorasporId)
-    .post("/constructoras", postConstructora)
-    .put("/constructoras/:id", putConstructora)
-    .delete("/constructoras/:id", deleteConstructora);
+    .get("/constructoras", authMiddleware, rolMiddleware("Administrador"), getConstructoras)
+    .get("/constructoras/:id", authMiddleware, rolMiddleware("Administrador"), getConstructorasporId)
+    .post("/constructoras", authMiddleware, rolMiddleware("Administrador"), postConstructora)
+    .put("/constructoras/:id", authMiddleware, rolMiddleware("Administrador"), putConstructora)
+    .delete("/constructoras/:id", authMiddleware, rolMiddleware("Administrador"), deleteConstructora);
 
 export {constructoraRouter};

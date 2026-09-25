@@ -10,7 +10,7 @@ import { constructoraPanelRouter } from "./Router/constructoraPanelRouter.ts";
 const app = new Application();
 
 app.use(oakCors({
-    origin: "http://localhost:4321",
+    origin: Deno.env.get("FRONTEND_URL") ?? "http://localhost:4321",
     credentials: true,   // necesario para que las cookies de sesión pasen
 }));
 

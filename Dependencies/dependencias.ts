@@ -7,7 +7,7 @@ export { create, verify, decode, getNumericDate} from "https://deno.land/x/djwt@
 export { encodeBase64Url } from "https://deno.land/std@0.224.0/encoding/base64url.ts";
 export {SMTPClient} from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 export * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
-export { send } from "https://deno.land/x/oak@v17.2.0/mod.ts";
+export { send } from "https://deno.land/x/oak@v17.2.0/send.ts";
 
 // ORM (npm)
 export { drizzle } from "npm:drizzle-orm@^0.36.4/mysql2";

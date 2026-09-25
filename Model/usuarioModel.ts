@@ -8,6 +8,7 @@ export interface UsuarioCreate {
     Password: string;  // Ya hasheado
     Telefono?: string;
     RolID?: number; 
+    AceptoTerminos?: boolean;
 }
 
 /**Busca un usuario por correo (para login y validar duplicados) */
@@ -45,7 +46,6 @@ export async function buscarPorId(id: number) {
         estadoCuenta: usuarios.estadoCuenta,
         fotoPerfil: usuarios.fotoPerfil,
         fechaRegistro: usuarios.fechaRegistro,
-        contrasenaHash: usuarios.contrasenaHash,
         aceptoTerminos: usuarios.aceptoTerminos,     
     })
     .from(usuarios)
@@ -75,7 +75,8 @@ export async function crearUsuario(data: UsuarioCreate): Promise<number> {
         telefono: data.Telefono ?? null,
         rolID: data.RolID ?? 3,
         estadoCuenta: "Activa",
-        aceptoTerminos: 0,
+        aceptoTerminos: data.AceptoTerminos ? 1 : 0,
+        fechaAceptacionTerminos: data.AceptoTerminos ? sql`NOW()` : null,
     });
 
     return Number(resultado[0].insertId);

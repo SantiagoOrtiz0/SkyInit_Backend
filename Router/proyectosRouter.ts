@@ -12,9 +12,9 @@ proyectosRouter.get("/proyectos/:id/similares", listarSimilares);
 proyectosRouter.get("/proyectos/:id/avances", listarAvances);
 
 //Rutas privadas (Constructora y administrador)
-proyectosRouter.post("/proyectos", authMiddleware,rolMiddleware ("Constructora", "Administrador"), crearProyecto );
+proyectosRouter.post("/proyectos", authMiddleware,rolMiddleware ("Administrador"), crearProyecto );
 proyectosRouter.put("/proyectos/:id", authMiddleware,rolMiddleware ("Constructora", "Administrador"), editarProyecto);
-proyectosRouter.delete("/proyectos/:id", authMiddleware,rolMiddleware ("Constructora", "Administrador"), eliminarProyecto);
+proyectosRouter.delete("/proyectos/:id", authMiddleware,rolMiddleware ("Administrador"), eliminarProyecto);
 
 // Ruta privada solo para constructora
 proyectosRouter.post("/proyectos/:id/avances", authMiddleware,rolMiddleware ("Constructora"), registrarAvance);
