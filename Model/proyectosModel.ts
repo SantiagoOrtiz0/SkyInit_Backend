@@ -142,7 +142,7 @@ export class Proyecto {
             .set({ porcentajeAvance: pct })
             .where(eq(proyectos.proyectoID, this._idProyecto!));
 
-        (resultado as { affectedRows?: number }).affectedRows
+       return (resultado as { affectedRows?: number }).affectedRows ?? 0;
     }
 
     public async InsertarProyecto(): Promise<number> {
