@@ -112,6 +112,39 @@ GET http://localhost:8001/panel/constructora/proyectos
 ### Propiedades de mi constructora
 GET http://localhost:8001/panel/constructora/propiedades
 
+
+### ____________________________________________________________
+### PROPIEDADES
+### ____________________________________________________________
+
+### Listar propiedades publicas
+GET http://localhost:8001/api/propiedades
+
+### Listar con filtros
+GET http://localhost:8001/api/propiedades?ciudad=Duitama&orden=precio_asc
+
+### Listar con filtro de precio
+GET http://localhost:8001/api/propiedades?precioMin=100000000&precioMax=500000000
+
+### Propiedades destacadas
+GET http://localhost:8001/api/propiedades/destacadas
+
+### Consultar propiedad publica por id (sin sesion - solo campos basicos)
+GET http://localhost:8001/api/propiedades/7
+
+### Consultar propiedad que no existe (debe dar 404)
+GET http://localhost:8001/api/propiedades/9999
+
+### Propiedades Similares
+GET http://localhost:8001/api/propiedades/7/similares
+
+### Consultar detalle completo sin token (debe dar 401)
+GET http://localhost:8001/api/propiedades/7/detalle
+
+### Consultar detalle completo con token (debe traer todos los campos)
+GET http://localhost:8001/api/propiedades/7/detalle
+
+
 ### ____________________________________________________________
 ### PROYECTOS
 ### ____________________________________________________________
