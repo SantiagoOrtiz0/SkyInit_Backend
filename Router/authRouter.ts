@@ -7,6 +7,6 @@ const authRouter = new Router();
 authRouter.post("/auth/registro", registro);
 authRouter.post("/auth/login",    login);
 authRouter.get("/auth/perfil",    authMiddleware, perfil);
-authRouter.post("/auth/logout",   authMiddleware, logout);
+authRouter.post("/auth/logout", logout);
 
 export default authRouter;

@@ -2,13 +2,12 @@ import { Context } from "../Dependencies/dependencias.ts";
 import { bcrypt } from "../Dependencies/dependencias.ts";
 import { CrearToken, setTokenCookie, clearTokenCookie } from "../Helpers/jwt.ts";
 import { buscarPorCorreo, buscarPorId, correoExiste, crearUsuario} from "../Model/usuarioModel.ts";
-import { usuarioAceptoTerminos } from "../Model/terminosModel.ts";
 
 // ---REGISTRO---
 export async function registro (ctx: Context) {
     try {
         const body = await ctx.request.body.json();
-        const {Nombre, Correo, Password, Confirmar, Telefono} = body;
+        const {Nombre, Correo, Password, Confirmar, Telefono, AceptoTerminos} = body;
 
         //Validar campos obligatorios
         if (!Nombre || !Correo || !Password || !Confirmar){
@@ -25,10 +24,12 @@ export async function registro (ctx: Context) {
             return;
         }
 
-        //Validar longitud minima de contraseña
-        if (Password.length < 8) {
+        //Validar contraseña segura (minimo 8 caracteres,al menos una mayuscula, una minuscula, un numero y un caracter especial)
+        const regexPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+        if (!regexPassword.test(Password)) {
             ctx.response.status = 400;
-            ctx.response.body = {error: "La contraseña debe tener minimo 8 caracteres"};
+            ctx.response.body = {error: "La contraseña debe contener al menos una letra mayúscula, una letra minúscula, un número y un carácter especial"};
             return;
         }
 
@@ -47,8 +48,15 @@ export async function registro (ctx: Context) {
             return;
         }
 
+        //Validar aceptación de terminos y condiciones
+        if (AceptoTerminos !== true) {
+            ctx.response.status = 400;
+            ctx.response.body = {error: "Debes aceptar los terminos y condiciones para registrarte"};
+            return;
+        }
+
         //Hashear contraseña
-        const hash = await bcrypt.hash(Password);
+        const hash  = await bcrypt.hash(Password);
 
         //Crear usuaro en BD
         const nuevoId = await crearUsuario({
@@ -57,13 +65,14 @@ export async function registro (ctx: Context) {
             Password: hash,
             Telefono: Telefono ?? null,
             RolID: 3,
+            AceptoTerminos: true,
         });
 
         //Generar token
         const token = await CrearToken(nuevoId, "Usuario");
         setTokenCookie(ctx, token);
         ctx.response.status = 201;
-        ctx.response.body = {mensaje: "Usuario registrado correctamente", usuario: {usuarioID: nuevoId, nombre: Nombre, correo: Correo, rol: "Usuario"},
+        ctx.response.body = {mensaje: "Usuario registrado correctamente", usuario: {usuarioID: nuevoId, nombre: Nombre, correo: Correo, rol: "Usuario", AceptoTerminos: true, token,},
         };
     } catch (error) {
         console.error("Error en registro:", error);
@@ -102,7 +111,13 @@ export async function login(ctx: Context) {
         }
 
         //Verificar contraseña
-        const passwordValida = await bcrypt.compare(Password, usuario.contrasenaHash);
+        if (!usuario.contrasenaHash) {
+            ctx.response.status = 401;
+            ctx.response.body = { error: "Credenciales incorrectas" };
+            return;
+        }
+        const passwordValida = await bcrypt.compare(Password, usuario.contrasenaHash as string);
+
         if(!passwordValida) {
             ctx.response.status = 401;
             ctx.response.body = {error: "Credenciales incorrectas"};
@@ -148,7 +163,7 @@ export async function perfil(ctx: Context) {
         }
 
         ctx.response.status = 200;
-        const {contrasenaHash: _omit, ...usuarioSeguro} = usuario;
+        const usuarioSeguro = usuario as Omit<typeof usuario, "contrasenaHash">;
         ctx.response.body = {usuario: usuarioSeguro}
     } catch (error) {
         console.error("Error en perfil:", error);
