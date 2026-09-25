@@ -321,12 +321,16 @@ export const serviciossolicitados = mysqlTable("serviciossolicitados", {
   servicioID: int("ServicioID")
     .notNull()
     .references(() => serviciosmantenimiento.servicioID, { onDelete: "cascade" }),
-  propiedadID: int("PropiedadID")
-    .notNull()
-    .references(() => propiedades.propiedadID, { onDelete: "cascade" }),
+  // Opcional: el formulario publico de "Solicitar servicio" no pide una propiedad especifica,
+  // por eso se relaja a nullable (antes era NOT NULL y rompia el insert).
+  propiedadID: int("PropiedadID").references(() => propiedades.propiedadID, {
+    onDelete: "cascade",
+  }),
   usuarioID: int("UsuarioID")
     .notNull()
     .references(() => usuarios.usuarioID, { onDelete: "cascade" }),
+  // Detalles adicionales que el usuario escribe en el modal de solicitud (antes no existia esta columna).
+  notas: text("Notas"),
   fechaSolicitud: datetime("FechaSolicitud").notNull().default(sql`CURRENT_TIMESTAMP`),
   estadoReparacionID: int("EstadoReparacionID").references(
     () => estadosreparacion.estadoReparacionID,

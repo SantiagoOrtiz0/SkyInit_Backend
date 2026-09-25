@@ -21,12 +21,21 @@ Content-Type: application/json
     "Correo": "jeffry@gmail.com",
     "Password": "12345678"
 }
+
+### Logout
+POST http://localhost:8001//auth/logout
+Content-Type: application/json
+
+{
+    "Correo": "jeffry@gmail.com",
+    "Password": "12345678"
+}
 ### 
 GET http://localhost:8001/auth/perfil
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
 ###
 POST http://localhost:8001/auth/logout
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiI5NGE0NThiNi01Mzc4LTQyN2UtODljOC1lMjI3ZGI1Y2NiMTYiLCJleHAiOjE3OTAzNTk4NTF9.FLns2avVU9x_HGVmOFc-1_gbXs_SbpZjXUF-eIE_Fts
 
 ### ____________________________________________________
 ### CONSTRUCTORAS
@@ -187,3 +196,4 @@ Authorization: Bearer
 Content-Type: application/json
 
 ###
+GET http://localhost:8001/api/servicios/1

@@ -1,6 +1,6 @@
 import { db } from "./conexion.ts";
-import { serviciosmantenimiento, inmobiliarias } from "./schema.ts";
-import { eq } from "../Dependencies/dependencias.ts";
+import { serviciosmantenimiento, inmobiliarias, serviciossolicitados } from "./schema.ts";
+import { eq, and } from "../Dependencies/dependencias.ts";
 
 // Tipo de retorno para un servicio activo, incluyendo la inmobiliaria que lo subio
 export interface ServicioMantenimiento {
@@ -91,4 +91,42 @@ export async function obtenerServiciosAgrupadosPorInmobiliaria(): Promise<GrupoS
     });
 
     return listaGrupos;
+}
+
+// ── Solicitar servicio ──────────────────────────────────────────
+
+// Verifica que el servicio exista y este activo antes de dejar solicitarlo
+export async function servicioActivoExiste(servicioID: number): Promise<boolean> {
+    const rows = await db
+        .select({ servicioID: serviciosmantenimiento.servicioID })
+        .from(serviciosmantenimiento)
+        .where(
+            and(
+                eq(serviciosmantenimiento.servicioID, servicioID),
+                eq(serviciosmantenimiento.estado, "Activo"),
+            ),
+        )
+        .limit(1);
+
+    return rows.length > 0;
+}
+
+export interface NuevaSolicitudServicio {
+    servicioID: number;
+    usuarioID: number;
+    propiedadID?: number | null;
+    notas?: string | null;
+}
+
+// Crea una solicitud de servicio de mantenimiento y devuelve el ID generado
+export async function crearSolicitudServicio(datos: NuevaSolicitudServicio): Promise<number> {
+    const resultado = await db.insert(serviciossolicitados).values({
+        servicioID: datos.servicioID,
+        usuarioID: datos.usuarioID,
+        propiedadID: datos.propiedadID ?? null,
+        notas: datos.notas ?? null,
+        // estadoReparacionID queda null: aun no hay un tecnico/estado asignado a la solicitud
+    });
+
+    return Number(resultado[0].insertId);
 }
