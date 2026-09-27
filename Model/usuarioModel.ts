@@ -23,6 +23,7 @@ export async function buscarPorCorreo(correo: string) {
         estadoCuenta: usuarios.estadoCuenta,
         fotoPerfil: usuarios.fotoPerfil,
         fechaRegistro: usuarios.fechaRegistro,
+        googleId: usuarios.googleId,
         contrasenaHash: usuarios.contrasenaHash,
         aceptoTerminos: usuarios.aceptoTerminos,
     })
