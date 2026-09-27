@@ -6,6 +6,7 @@ import terminosRouter from "./Router/terminosRouter.ts";
 import propiedadesRouter from "./Router/propiedadesRouter.ts";
 import proyectosRouter from "./Router/proyectosRouter.ts";
 import { constructoraPanelRouter } from "./Router/constructoraPanelRouter.ts";
+import { inmobiliariaPublicaRouter } from "./Router/inmobiliariaPublicaRouter.ts";
 import { send } from "./Dependencies/dependencias.ts";
 
 const app = new Application();
@@ -31,7 +32,7 @@ app.use(async (ctx, next) => {
 });
 
 // Registrar routers
-const routes = [serviciosRouter,constructoraRouter,authRouter,terminosRouter,propiedadesRouter, proyectosRouter,constructoraPanelRouter];
+const routes = [serviciosRouter,constructoraRouter,authRouter,terminosRouter,propiedadesRouter, proyectosRouter,constructoraPanelRouter,inmobiliariaPublicaRouter];
 
 routes.forEach(router => {
     app.use(router.routes());
