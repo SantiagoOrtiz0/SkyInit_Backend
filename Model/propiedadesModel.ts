@@ -57,7 +57,12 @@ export class Propiedad {
         .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID))
         .leftJoin(usuarios, eq(propiedades.agenteID, usuarios.usuarioID))
         .leftJoin(constructoras, eq(propiedades.constructoraID, constructoras.constructoraID))
-        .where(eq(propiedades.propiedadID, this._idPropiedad!));
+        .where(
+            and(
+            eq(propiedades.propiedadID, this._idPropiedad!),
+            eq(propiedades.estado, "Disponible")
+        )
+    );
 
         if(!propiedad) return null;
 
@@ -75,6 +80,7 @@ export class Propiedad {
     public async SeleccionarPropiedades(filtros: FiltrosPropiedad = {}) {
         const condiciones = [];
 
+        condiciones.push(eq(propiedades.estado, "Disponible"));
         if(filtros.ciudad) condiciones.push(like(propiedades.ciudad, `%${filtros.ciudad}%`));
         if(filtros.tipoOperacionID) condiciones.push(eq(propiedades.tipoOperacionID, filtros.tipoOperacionID));
         if(filtros.habitaciones) condiciones.push(eq(propiedades.habitaciones, filtros.habitaciones));
