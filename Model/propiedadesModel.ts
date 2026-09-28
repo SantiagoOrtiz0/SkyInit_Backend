@@ -49,29 +49,49 @@ export class Propiedad {
             destacada: propiedades.destacada,
             fechaPublicacion: propiedades.fechaPublicacion,
             tipoOperacion: tiposoperacion.descripcion,
-            agenteNombre: usuarios.nombre,
-            agenteCorreo: usuarios.correo,
+            agenteID: propiedades.agenteID,
+            constructoraID: propiedades.constructoraID,
             constructoraNombre: constructoras.nombre,
         })
         .from(propiedades)
-        .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID))
-        .leftJoin(usuarios, eq(propiedades.agenteID, usuarios.usuarioID))
-        .leftJoin(constructoras, eq(propiedades.constructoraID, constructoras.constructoraID))
+        .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID),) 
+        .leftJoin(constructoras, eq(propiedades.constructoraID, constructoras.constructoraID),)
         .where(
             and(
             eq(propiedades.propiedadID, this._idPropiedad!),
-            eq(propiedades.estado, "Disponible")
-        )
+            eq(propiedades.estado, "Disponible"),
+        ),
     );
 
         if(!propiedad) return null;
+        let agenteNombre: string | null = null;
+        let agenteCorreo: string | null = null;
+        let agenteTelefono: string | null = null;
+
+    if (propiedad.agenteID) {
+        const [agente] = await db
+            .select({
+                nombre: usuarios.nombre,
+                correo: usuarios.correo,
+                telefono: usuarios.telefono,
+            })
+            .from(usuarios)
+            .where(eq(usuarios.usuarioID, propiedad.agenteID))
+            .limit(1);
+
+        if (agente) {
+            agenteNombre = agente.nombre ?? null;
+            agenteCorreo = agente.correo ?? null;
+            agenteTelefono = agente.telefono ?? null;
+        }
+    }
 
         const imagenes = await db
         .select({url: imagenespropiedad.url})
         .from(imagenespropiedad)
         .where(eq(imagenespropiedad.propiedadID, this._idPropiedad!));
 
-        return {...propiedad, imagenes:imagenes.map((i) => i.url)};
+        return {...propiedad, agenteNombre, agenteCorreo, agenteTelefono,imagenes:imagenes.map((i) => i.url)};
     }
 
 
