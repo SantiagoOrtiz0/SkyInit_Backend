@@ -68,12 +68,35 @@ export const consultarPropiedad = async (ctx:any) => {
             ctx.response.body = {error: "No ha sido encontrada la propiedad consultada"};
             return;
         }
+            // Solo campos publicos
+            const { descripcion, agenteNombre, agenteCorreo, constructoraNombre, ...publico} = propiedad;
             ctx.response.status = 200;
-            ctx.response.body = {message: "Propiedad encontrada:", propiedad};
+            ctx.response.body = { propiedad: publico};
     } catch (error) {
         console.log(error);
         ctx.response.status = 500;
         ctx.response.body = {error: "Error al consultar la propiedad, no se pudo procesar la solicitud"};
+    }
+};
+
+// Consultar propiedad por id - campos completos (Privada) - Muestra la información completa para un usuario logueado
+export const consultarPropiedadDetalle = async (ctx:any) => {
+    try {
+        const { id } = ctx.params;
+        const modeloPropiedad = new Propiedad(null, Number(id));
+        const propiedad = await modeloPropiedad.ConsultarPropiedad();
+
+        if (!propiedad) {
+            ctx.response.status = 404;
+            ctx.response.body = { error: "Propiedad no encontrada o no disponible"};
+            return;
+        }
+        ctx.response.status = 200;
+        ctx.response.body = { propiedad };
+    } catch (error) {
+        console.log(error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error al consultar el detalle de la propiedad"};
     }
 };
 

@@ -1,6 +1,6 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
-import { listarPropiedades,listarDestacadas, listarPorAgente, consultarPropiedad, listarSimilares, crearPropiedad, editarPropiedad, eliminarPropiedad } from "../Controller/propiedadesController.ts";
+import { listarPropiedades,listarDestacadas, listarPorAgente, consultarPropiedad, consultarPropiedadDetalle , listarSimilares, crearPropiedad, editarPropiedad, eliminarPropiedad } from "../Controller/propiedadesController.ts";
 
 const propiedadesRouter = new Router();
 
@@ -10,6 +10,9 @@ propiedadesRouter.get("/api/propiedades/destacadas", listarDestacadas);
 propiedadesRouter.get("/api/propiedades/agente/:agenteID", listarPorAgente);
 propiedadesRouter.get("/api/propiedades/:id/similares", listarSimilares);
 propiedadesRouter.get("/api/propiedades/:id", consultarPropiedad);
+
+// Nueva ruta autenticada
+propiedadesRouter.get("/api/propiedades/:id/detalle", authMiddleware, consultarPropiedadDetalle);
 
 //Rutas privadas (Agente y administrador)
 propiedadesRouter.post("/api/propiedades",authMiddleware,rolMiddleware("Agente","Administrador"),crearPropiedad);
