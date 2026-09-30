@@ -1,6 +1,6 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
-import { listarPropiedades,listarDestacadas, listarPorAgente, consultarPropiedad, consultarPropiedadDetalle , listarSimilares, crearPropiedad, editarPropiedad, eliminarPropiedad } from "../Controller/propiedadesController.ts";
+import { listarPropiedades,listarDestacadas, listarPorAgente, consultarPropiedad, consultarPropiedadDetalle , listarSimilares, crearPropiedad, editarPropiedad, eliminarPropiedad, postImagenPropiedad, deleteImagenPropiedad } from "../Controller/propiedadesController.ts";
 
 const propiedadesRouter = new Router();
 
@@ -18,5 +18,8 @@ propiedadesRouter.get("/api/propiedades/:id/detalle", authMiddleware, consultarP
 propiedadesRouter.post("/api/propiedades",authMiddleware,rolMiddleware("Agente","Administrador"),crearPropiedad);
 propiedadesRouter.put("/api/propiedades/:id",authMiddleware,rolMiddleware("Agente", "Administrador"),editarPropiedad);
 propiedadesRouter.delete("/api/propiedades/:id",authMiddleware,rolMiddleware("Agente", "Administrador"),eliminarPropiedad);
+
+propiedadesRouter.post("/api/propiedades/:id/imagenes", authMiddleware, rolMiddleware("Agente", "Constructora", "Administrador"), postImagenPropiedad);
+propiedadesRouter.delete("/api/propiedades/:id/imagenes/:imagenId", authMiddleware,rolMiddleware("Agente","Constructora","Administrador"), deleteImagenPropiedad);
 
 export default propiedadesRouter;

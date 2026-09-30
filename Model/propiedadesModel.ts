@@ -243,5 +243,36 @@ export class Propiedad {
 
         return !!fila && fila.constructoraID === constructoraID;
     }
+    // Confirma que la propiedad sea del agente autenticado (para proteger la subida y el borrado de imagenes)
+    public async PerteneceAAgente(agenteID: number): Promise<boolean> {
+        const [fila] = await db
+        .select({ agenteID: propiedades.agenteID })
+        .from(propiedades)
+        .where(eq(propiedades.propiedadID, this._idPropiedad!))
+        .limit(1);
 
+        return !!fila && fila.agenteID === agenteID;
+    }
+
+    public async InsertarImagen(url: string): Promise<number> {
+        const [resultado] = await db.insert(imagenespropiedad).values({
+            propiedadID: this._idPropiedad!,
+            url,
+        });
+        return Number((resultado as any).insertId ?? 0);
+    }
+
+    // Devuelve la url eliminada para borrar el archivo del disco
+    public async EliminarImagen(imagenID: number): Promise<string | null> {
+        const [fila] = await db
+        .select({ url: imagenespropiedad.url, propiedadID: imagenespropiedad.propiedadID })
+        .from(imagenespropiedad)
+        .where(eq(imagenespropiedad.imagenID, imagenID))
+        .limit(1);
+
+        if (!fila || fila.propiedadID !== this._idPropiedad) return null;
+
+        await db.delete(imagenespropiedad).where(eq(imagenespropiedad.imagenID, imagenID));
+        return fila.url;
+    }
 }

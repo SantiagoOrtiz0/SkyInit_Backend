@@ -1,5 +1,8 @@
-import { Context } from "../Dependencies/dependencias.ts";
+import { Context, eq } from "../Dependencies/dependencias.ts";
 import { Propiedad } from "../Model/propiedadesModel.ts";
+import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
+import { db } from "../Model/conexion.ts";
+import { constructoras } from "../Model/schema.ts";
 
 // Listar propiedades con filtros (Publica)
 export const listarPropiedades = async (ctx:Context) => {
@@ -185,6 +188,19 @@ export const crearPropiedad = async (ctx:Context) => {
 export const editarPropiedad = async (ctx:any) => {
     try {
         const {id} = ctx.params;
+        const idPropiedad = Number(id);
+
+        if (Number.isNaN(idPropiedad)) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: "ID de propiedad invalido" };
+            return;
+        }
+        if (!(await puedeGestionarPropiedad(ctx, idPropiedad))) {
+            ctx.response.status = 403;
+            ctx.response.body = { error: "No tienes permisos sobre esta propiedad" };
+            return;
+        }
+
         const body = await ctx.request.body.json();
         const {titulo, descripcion, precio, tipoOperacionID, habitaciones, direccion, ciudad, constructoraID, agenteID, estado, destacada} = body;
 
@@ -229,6 +245,19 @@ export const editarPropiedad = async (ctx:any) => {
 export const eliminarPropiedad = async (ctx: any) => {
     try {
         const {id} = ctx.params;
+        const idPropiedad = Number(id);
+
+        if (Number.isNaN(idPropiedad)) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: "ID de propiedad invalido" };
+            return;
+        }
+
+        if(!(await puedeGestionarPropiedad(ctx, idPropiedad))) {
+            ctx.response.status = 403;
+            ctx.response.body = { error: "No tiene permisos sobre esta propiedad" };
+            return;
+        }
         const modeloPropiedad = new Propiedad(null, Number(id));
         const filasAfectadas = await modeloPropiedad.EliminarPropiedad();
 
@@ -243,5 +272,110 @@ export const eliminarPropiedad = async (ctx: any) => {
         console.log(error);
         ctx.response.status = 500;
         ctx.response.body = {error: "Error al eliminar la propiedad"};
+    }
+};
+// Verifica que el agente autenticado sea dueño de la propiedad (El administrador no tendra restriccion)
+async function puedeGestionarPropiedad(ctx: any, idPropiedad: number): Promise<boolean> {
+    const usuario = ctx.state.user as { sub?: string; rol?: string } |undefined;
+     const modeloPropiedad = new Propiedad(null, idPropiedad);
+    if (usuario?.rol === "Administrador") return true; //Sin restriccion
+    if (usuario?.rol === "Constructora") {
+        const [fila] = await db
+        .select({ constructoraID: constructoras.constructoraID, estado: constructoras.estado})
+        .from((constructoras))
+        .where(eq(constructoras.usuarioID, Number(usuario?.sub)))
+        .limit(1);
+
+        if (!fila || fila.estado !== "Activo") return false;
+
+        return await modeloPropiedad.PerteneceAConstructora(fila.constructoraID);
+    }
+    return await modeloPropiedad.PerteneceAAgente(Number(usuario?.sub));
+}
+
+export const postImagenPropiedad = async (ctx: any) => {
+
+    let urlGuardada: string | undefined;
+    try {
+        const { id } = ctx.params;
+        const idPropiedad = Number(id);
+
+         if (Number.isNaN(idPropiedad)) {
+             ctx.response.status = 400;
+             ctx.response.body = { error: "ID de propiedad invalido"};
+        return;
+    }
+        if (!(await puedeGestionarPropiedad(ctx, idPropiedad))) {
+            ctx.response.status = 403;
+            ctx.response.body = { error: "No tienes permisos sobre esta propiedad" };
+            return;
+        }
+
+        const form = await ctx.request.body.formData();
+        const archivo = form.get("imagen");
+
+        if (!(archivo instanceof File)) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: "Debes enviar un archivo 'imagen'" };
+            return;
+        }
+
+        const resultado = await guardarImagen(archivo, "propiedades");
+
+        if (!resultado.url) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: resultado.error ?? "No se pudo guardar la imagen" };
+            return;
+        }
+        urlGuardada = resultado.url;
+        const modeloPropiedad = new Propiedad(null, idPropiedad);
+        const imagenID = await modeloPropiedad.InsertarImagen(resultado.url);
+
+        ctx.response.status = 201;
+        ctx.response.body = { message: "Imagen agregada", data: { imagenID, url: resultado.url }};
+    } catch (error) {
+        console.log(error);
+        await eliminarImagenDisco(urlGuardada);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error al subir la imagen de la propiedad" };
+    }
+};
+
+export const deleteImagenPropiedad = async (ctx: any) => {
+    try {
+        const { id, imagenID } = ctx.params;
+        const idPropiedad = Number(id);
+        const IdImagen = Number(imagenID);
+
+        if (Number.isNaN(idPropiedad) || Number.isNaN(IdImagen)) {
+             ctx.response.status = 400;
+             ctx.response.body = { error: "ID invalido" };
+            return;
+        }
+        
+        if (!(await puedeGestionarPropiedad(ctx, idPropiedad))) {
+            ctx.response.status = 403;
+            ctx.response.body = { error: "No tienes permisos sobre esta propiedad" };
+            return;
+        }
+
+        const modeloPropiedad = new Propiedad(null, idPropiedad);
+        const url = await modeloPropiedad.EliminarImagen(IdImagen);
+        // La imagen no existe o no pertenece a esta propiedad
+        if (url === null) {
+            ctx.response.status = 404;
+            ctx.response.body = { error: "Imagen no encontrada" };
+            return;
+        }
+
+        // La fila ya se borra de la BD, ahora se borra el archivo del disco
+        await eliminarImagenDisco(url);
+
+        ctx.response.status = 200;
+        ctx.response.body = { message: "Imagen eliminada correctamente" };
+    } catch (error) {
+        console.log(error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error al eliminar la imagen de la propiedad"};
     }
 };
