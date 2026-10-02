@@ -1,5 +1,5 @@
 import { Context } from "../Dependencies/dependencias.ts";
-import { CrearToken, setTokenCookie } from "../Helpers/jwt.ts";
+import { crearToken, setTokenCookie } from "../Helpers/jwt.ts";
 import { buscarPorCorreo } from "../Model/usuarioModel.ts";
 import { db } from "../Model/conexion.ts";
 import { usuarios } from "../Model/schema.ts";
@@ -78,11 +78,13 @@ export async function googleCallback(ctx: Context) {
                 aceptoTerminos: 0,
             });
             const nuevoId = Number(resultado[0].insertId);
-            const token = await CrearToken(nuevoId, "Usuario");
+            const token = await crearToken(nuevoId, "Usuario");
             setTokenCookie(ctx, token);
 
             // Redirigir a términos si es nuevo
-            ctx.response.redirect(`${FRONTEND_URL}/terminos?nuevo=true`);
+            ctx.response.redirect(
+                `${FRONTEND_URL}/api/auth/google-callback?token=${token}&rol=Usuario&nuevo=true`
+            );
             return;
         }
 
@@ -98,13 +100,16 @@ export async function googleCallback(ctx: Context) {
             return;
         }
 
-        const token = await CrearToken(usuario.usuarioID, usuario.nombreRol);
+        const token = await crearToken(usuario.usuarioID, usuario.nombreRol);
         setTokenCookie(ctx, token);
-        ctx.response.redirect(`${FRONTEND_URL}${rutaPorRolBackend(usuario.nombreRol)}`);
+        ctx.response.redirect(
+            `${FRONTEND_URL}/api/auth/google-callback?token=${token}&rol=${usuario.nombreRol}`
+        );
 
     } catch (error) {
-        console.error("Error en Google OAuth:", error);
-        ctx.response.redirect(`${FRONTEND_URL}/login?error=error_interno`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("Error en Google OAuth:", msg);
+    ctx.response.redirect(`${FRONTEND_URL}/login?error=${encodeURIComponent(msg)}`);
     }
 }
 
