@@ -510,3 +510,84 @@ export const deletePropiedadConstructora = async (ctx: RouterContext<"/panel/con
         response.body = { success: false, message: "Error al eliminar la propiedad" };
     }
 };
+
+// --- Imágenes de propiedad (panel constructora) ---
+
+export const postImagenPropiedad = async (
+    ctx: RouterContext<"/panel/constructora/propiedades/:id/imagenes">,
+    ) => {
+    const { response, params, request, state } = ctx as typeof ctx & {
+        state: { constructoraID: number };
+    };
+    try {
+        const id = Number(params.id);
+        const propiedad = new Propiedad(null, id);
+
+        if (!(await propiedad.PerteneceAConstructora(state.constructoraID))) {
+        response.status = 404;
+        response.body = { success: false, message: "Propiedad no encontrada" };
+        return;
+        }
+
+        const form = await request.body.formData();
+        const archivo = form.get("imagen");
+        if (!(archivo instanceof File)) {
+        response.status = 400;
+        response.body = { success: false, message: "Debes enviar un archivo 'imagen'" };
+        return;
+        }
+
+        const resultado = await guardarImagen(archivo, "propiedades");
+        if (!resultado.ok) {
+        response.status = 400;
+        response.body = { success: false, message: resultado.error };
+        return;
+        }
+
+        const imagenID = await propiedad.InsertarImagen(resultado.url!);
+        response.status = 201;
+        response.body = {
+        success: true,
+        message: "Imagen agregada",
+        data: { imagenID, url: resultado.url },
+        };
+    } catch (error) {
+        console.error("ERROR AL SUBIR IMAGEN PROPIEDAD:", error);
+        response.status = 500;
+        response.body = { success: false, message: "Error al subir la imagen" };
+    }
+};
+
+export const deleteImagenPropiedad = async (
+    ctx: RouterContext<"/panel/constructora/propiedades/:id/imagenes/:imagenId">,
+    ) => {
+    const { response, params, state } = ctx as typeof ctx & {
+        state: { constructoraID: number };
+    };
+    try {
+        const id = Number(params.id);
+        const imagenId = Number(params.imagenId);
+
+        const propiedad = new Propiedad(null, id);
+        if (!(await propiedad.PerteneceAConstructora(state.constructoraID))) {
+        response.status = 404;
+        response.body = { success: false, message: "Propiedad no encontrada" };
+        return;
+        }
+
+        const urlEliminada = await propiedad.EliminarImagen(imagenId);
+        if (!urlEliminada) {
+        response.status = 404;
+        response.body = { success: false, message: "Imagen no encontrada" };
+        return;
+        }
+
+        await eliminarImagenDisco(urlEliminada);
+        response.status = 200;
+        response.body = { success: true, message: "Imagen eliminada" };
+    } catch (error) {
+        console.error("ERROR AL ELIMINAR IMAGEN PROPIEDAD:", error);
+        response.status = 500;
+        response.body = { success: false, message: "Error al eliminar la imagen" };
+    }
+};

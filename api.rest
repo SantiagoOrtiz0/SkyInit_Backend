@@ -7,18 +7,18 @@ POST http://localhost:8001/auth/registro
 Content-Type: application/json
 
 {
-    "Nombre": "Constructora",
-    "Correo": "constructorapara@gmail.com",
+    "Nombre": "Geovany",
+    "Correo": "andriu.geova@gmail.com",
     "Password": "#SkyInit2026",
     "Confirmar": "#SkyInit2026",
-    "Telefono": "3123190796"
+    "Telefono": "2121212122"
 }
 ### Login
 POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-    "Correo": "skyinit2026@gmail.com",
+    "Correo": "constructora@gmail.com",
     "Password": "#SkyInit2026"
 }
 
@@ -36,6 +36,23 @@ Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVz
 ###
 POST http://localhost:8001/auth/logout
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiI5NGE0NThiNi01Mzc4LTQyN2UtODljOC1lMjI3ZGI1Y2NiMTYiLCJleHAiOjE3OTAzNTk4NTF9.FLns2avVU9x_HGVmOFc-1_gbXs_SbpZjXUF-eIE_Fts
+
+### Olvidé contraseña
+POST http://localhost:8001/auth/olvide-password
+Content-Type: application/json
+
+{
+  "Correo": "constructora@gmail.com"
+}
+###
+POST http://localhost:8001/auth/restablecer-password
+Content-Type: application/json
+
+{
+  "Token": "358e2720-93e8-460a-b4f3-5d6d2fb8ff4a",
+  "Password": "NuevaContraseña123",
+  "Confirmar": "NuevaContraseña123"
+}
 
 ### ____________________________________________________
 ### CONSTRUCTORAS
@@ -232,3 +249,20 @@ Content-Type: application/json
 
 ###
 GET http://localhost:8001/api/servicios/1
+
+###
+GET http://localhost:8001/panel/constructora/proyectos
+Cookie:  skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOSIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6IjI3NzU4MGU2LTliODctNGFlYi05ZTRjLWFkZjg1OWIxMWFkOCIsImV4cCI6MTc5MDkwMTYwMn0.7uIEhW_QHv1P-mnfSgd7FQ3IZYkWOb2D-unkc3mfOEM
+
+###
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+  "Correo": "constructora@gmail.com",
+  "Password": "NuevaContraseña123"
+}
+
+###
+GET http://localhost:8001/panel/constructora/proyectos/5
+Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOSIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6IjI3NzU4MGU2LTliODctNGFlYi05ZTRjLWFkZjg1OWIxMWFkOCIsImV4cCI6MTc5MDkwMTYwMn0.7uIEhW_QHv1P-mnfSgd7FQ3IZYkWOb2D-unkc3mfOEM

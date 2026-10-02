@@ -56,11 +56,13 @@ export class Proyecto {
         if (!proyecto) return null;
 
         const imagenes = await db
-        .select({ url: imagenesproyecto.url })
+        .select({
+            imagenID: imagenesproyecto.imagenID,
+            url: imagenesproyecto.url })
         .from(imagenesproyecto)
         .where(eq(imagenesproyecto.proyectoID, this._idProyecto!));
 
-        return {...proyecto, imagenes: imagenes.map((i) => i.url)};
+        return {...proyecto, imagenes: imagenes,};
     }
 
 
@@ -147,8 +149,42 @@ export class Proyecto {
     }
     // Proyectos de la constructora
     public async SeleccionarPorConstructora(constructoraID: number) {
-        const resultados = await db.select().from(proyectos).where(eq(proyectos.constructoraID, constructoraID));
-        return await this.AdjuntarImagenPrincipal(resultados);
+    const rows = await db
+        .select({
+        proyectoID: proyectos.proyectoID,
+        nombre: proyectos.nombre,
+        estadoProyectoID: proyectos.estadoProyectoID,
+        estado: estadosproyecto.descripcion,
+        porcentajeAvance: proyectos.porcentajeAvance,
+        fechaInicio: proyectos.fechaInicio,
+        fechaFin: proyectos.fechaFin,
+        descripcion: proyectos.descripcion,
+        ubicacion: proyectos.ubicacion,
+        constructoraID: proyectos.constructoraID,
+        })
+        .from(proyectos)
+        .leftJoin(
+        estadosproyecto,
+        eq(proyectos.estadoProyectoID, estadosproyecto.estadoProyectoID),
+        )
+        .where(eq(proyectos.constructoraID, constructoraID));
+
+    const conFotos = await Promise.all(
+        rows.map(async (p) => {
+        const imgs = await db
+            .select({ url: imagenesproyecto.url })
+            .from(imagenesproyecto)
+            .where(eq(imagenesproyecto.proyectoID, p.proyectoID));
+
+        return {
+            ...p,
+            totalImagenes: imgs.length,
+            imagenUrl: imgs[0]?.url ?? null,
+        };
+        }),
+    );
+
+    return conFotos;
     }
 
     // Historial de avances del proyecto (porcentaje y notas)
@@ -175,10 +211,15 @@ export class Proyecto {
             nota: nota ?? null,
         });
 
+
+        const pctNum = Number(pct);
+        const estadoDerivado = pctNum >= 100 ? 3 : pctNum > 0 ? 2 : 1;
         // Actualiza el % actual del proyecto (importante)
         await db
             .update(proyectos)
-            .set({ porcentajeAvance: pct })
+            .set({ porcentajeAvance: pct,
+               estadoProyectoID : estadoDerivado,
+            })
             .where(eq(proyectos.proyectoID, this._idProyecto!));
 
        return (resultado as { affectedRows?: number }).affectedRows ?? 0;

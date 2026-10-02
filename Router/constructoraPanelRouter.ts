@@ -21,6 +21,8 @@ import {
     postPropiedadConstructora,
     putPropiedadConstructora,
     deletePropiedadConstructora,
+    postImagenPropiedad,
+    deleteImagenPropiedad,
 } from "../Controller/constructoraPanelController.ts";
 
 const constructoraPanelRouter = new Router();
@@ -65,5 +67,9 @@ constructoraPanelRouter
     .post("/panel/constructora/propiedades", ...proteger, postPropiedadConstructora)
     .put("/panel/constructora/propiedades/:id", ...proteger, putPropiedadConstructora)
     .delete("/panel/constructora/propiedades/:id", ...proteger, deletePropiedadConstructora);
+
+constructoraPanelRouter
+    .post("/panel/constructora/propiedades/:id/imagenes", ...proteger, postImagenPropiedad)
+    .delete("/panel/constructora/propiedades/:id/imagenes/:imagenId",...proteger,deleteImagenPropiedad,);
 
 export { constructoraPanelRouter };

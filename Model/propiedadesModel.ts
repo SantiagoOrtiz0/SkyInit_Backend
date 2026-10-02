@@ -87,11 +87,13 @@ export class Propiedad {
     }
 
         const imagenes = await db
-        .select({url: imagenespropiedad.url})
+        .select({
+            imagenID :imagenespropiedad.imagenID,
+            url: imagenespropiedad.url})
         .from(imagenespropiedad)
         .where(eq(imagenespropiedad.propiedadID, this._idPropiedad!));
 
-        return {...propiedad, agenteNombre, agenteCorreo, agenteTelefono,imagenes:imagenes.map((i) => i.url)};
+        return {...propiedad, agenteNombre, agenteCorreo, agenteTelefono, imagenes,};
     }
 
 
@@ -242,7 +244,7 @@ export class Propiedad {
     }
 
     public async SeleccionarPorConstructora(constructoraID: number) {
-        return await db
+        const rows = await db
         .select({
             propiedadID: propiedades.propiedadID,
             titulo: propiedades.titulo,
@@ -259,6 +261,20 @@ export class Propiedad {
         .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID))
         .where(eq(propiedades.constructoraID, constructoraID))
         .orderBy(desc(propiedades.fechaPublicacion));
+
+        return await Promise.all(
+            rows.map(async (p) => {
+            const imgs = await db
+                .select({ url: imagenespropiedad.url })
+                .from(imagenespropiedad)
+                .where(eq(imagenespropiedad.propiedadID, p.propiedadID));
+            return {
+                ...p,
+                totalImagenes: imgs.length,
+                imagenUrl: imgs[0]?.url ?? null,
+            };
+            }),
+        );
     }
 
     public async PerteneceAConstructora(constructoraID: number): Promise<boolean> {
@@ -297,9 +313,25 @@ export class Propiedad {
         .where(eq(imagenespropiedad.imagenID, imagenID))
         .limit(1);
 
+    public async InsertarImagen(url: string): Promise<number> {
+        const [resultado] = await db.insert(imagenespropiedad).values({
+            propiedadID: this._idPropiedad!,
+            url,
+        });
+        return Number((resultado as any).insertId ?? 0);
+    }
+
+    public async EliminarImagen(imagenID: number): Promise<string | null> {
+        const [fila] = await db
+            .select({ url: imagenespropiedad.url, propiedadID: imagenespropiedad.propiedadID })
+            .from(imagenespropiedad)
+            .where(eq(imagenespropiedad.imagenID, imagenID))
+            .limit(1);
+
         if (!fila || fila.propiedadID !== this._idPropiedad) return null;
 
         await db.delete(imagenespropiedad).where(eq(imagenespropiedad.imagenID, imagenID));
         return fila.url;
     }
+
 }

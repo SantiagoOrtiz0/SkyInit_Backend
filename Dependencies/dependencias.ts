@@ -24,5 +24,5 @@ export {
     timestamp,
     mysqlEnum,
 } from "npm:drizzle-orm@^0.36.4/mysql-core";
-export { eq, and, or, like, gte, lte, ne, desc, asc, sql, inArray } from "npm:drizzle-orm@^0.36.4";
+export { eq, and, or, like, gte, lte, ne, desc, asc, sql, inArray, gt } from "npm:drizzle-orm@^0.36.4";
 export { default as mysql } from "npm:mysql2@^3.11.5/promise";
