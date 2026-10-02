@@ -144,7 +144,6 @@ GET http://localhost:8001/api/propiedades/7/detalle
 ### Consultar detalle completo con token (debe traer todos los campos)
 GET http://localhost:8001/api/propiedades/7/detalle
 
-
 ### ____________________________________________________________
 ### PROYECTOS
 ### ____________________________________________________________
