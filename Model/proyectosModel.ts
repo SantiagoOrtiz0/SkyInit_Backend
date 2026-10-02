@@ -1,4 +1,4 @@
-import { eq, and, like, desc, asc } from "../Dependencies/dependencias.ts";
+import { eq, and, like, desc, asc, inArray } from "../Dependencies/dependencias.ts";
 import { db } from "./conexion.ts";
 import { proyectos, estadosproyecto, constructoras, imagenesproyecto, avancesproyecto, usuarios} from "./schema.ts";
 
@@ -44,6 +44,9 @@ export class Proyecto {
             estadoProyecto: estadosproyecto.descripcion,
             constructoraID: constructoras.constructoraID,
             constructoraNombre: constructoras.nombre,
+            constructoraContacto: constructoras.contacto,
+            constructoraTelefono: constructoras.telefono,
+            constructoraCorreo: constructoras.correo,
         })
         .from(proyectos)
         .innerJoin(estadosproyecto, eq(proyectos.estadoProyectoID, estadosproyecto.estadoProyectoID))
@@ -62,6 +65,23 @@ export class Proyecto {
         return {...proyecto, imagenes: imagenes,};
     }
 
+
+  private async AdjuntarImagenPrincipal<T extends { proyectoID: number }>(lista: T[]) {
+        if (lista.length === 0) return lista.map((p) => ({ ...p, imagenPrincipal: null as string | null }));
+
+        const ids = lista.map((p) => p.proyectoID);
+        const imagenes = await db
+        .select({ proyectoID: imagenesproyecto.proyectoID, url: imagenesproyecto.url })
+        .from(imagenesproyecto)
+        .where(inArray(imagenesproyecto.proyectoID, ids))
+        .orderBy(asc(imagenesproyecto.imagenID));
+
+        const mapaImagenes = new Map<number, string>();
+        for (const img of imagenes) {
+            if (!mapaImagenes.has(img.proyectoID) && img.url) mapaImagenes.set(img.proyectoID, img.url);
+        }
+        return lista.map((p) => ({ ...p, imagenPrincipal: mapaImagenes.get(p.proyectoID) ?? null }));
+    }
     // Filtrado por estado, constructora, ubicacion y ordenar proyectos
 
     public async SeleccionarProyectos(filtros: FiltrosProyecto = {}) {
@@ -74,31 +94,47 @@ export class Proyecto {
         const query = db.select({
             proyectoID: proyectos.proyectoID,
             nombre: proyectos.nombre,
+            descripcion: proyectos.descripcion,
             estadoProyectoID: proyectos.estadoProyectoID,
             porcentajeAvance: proyectos.porcentajeAvance,
             fechaInicio: proyectos.fechaInicio,
             fechaFin: proyectos.fechaFin,
             ubicacion: proyectos.ubicacion,
+            constructoraID: proyectos.constructoraID,
             estadoProyecto: estadosproyecto.descripcion,
+            constructoraNombre: constructoras.nombre,
         })
         .from(proyectos)
         .innerJoin(estadosproyecto, eq(proyectos.estadoProyectoID, estadosproyecto.estadoProyectoID))
+        .leftJoin(
+            constructoras,
+            eq(proyectos.constructoraID, constructoras.constructoraID),
+        )
         .where(condiciones.length ? and(...condiciones) : undefined);
 
+        let resultados;
         switch (filtros.orden) {
             case "avance_asc" :
-                return await query.orderBy(asc(proyectos.porcentajeAvance));
+                resultados = await query.orderBy(asc(proyectos.porcentajeAvance));
+                break;
             case "avance_desc":
-                return await query.orderBy(desc(proyectos.porcentajeAvance));
+                resultados = await query.orderBy(desc(proyectos.porcentajeAvance));
+                break;
             case "fecha":
-                return await query.orderBy(desc(proyectos.fechaInicio));
+                resultados = await query.orderBy(desc(proyectos.fechaInicio));
+                break;
             default:
-                return await query;
+                resultados = await query;
         }
+
+        return await this.AdjuntarImagenPrincipal(resultados);
     }
+
+  
+
     // Proyectos similares (misma constructora y mismo estado)
     public async SeleccionarSimilares(constructoraID: number, estadoProyectoID: number) {
-        return await db
+        const resultados = await db
         .select()
         .from(proyectos)
         .where(
@@ -108,6 +144,8 @@ export class Proyecto {
             ),
         )
         .limit(6);
+
+        return await this.AdjuntarImagenPrincipal(resultados)
     }
     // Proyectos de la constructora
     public async SeleccionarPorConstructora(constructoraID: number) {

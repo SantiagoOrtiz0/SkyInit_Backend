@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "dev": "deno run --watch --allow-net --allow-env --allow-read --allow-write --env-file=.env app.ts"
+    "dev":  "deno run --watch --allow-net --allow-env --allow-read --allow-write --env-file=.env app.ts",
+    "push": "deno run --allow-net --allow-env --allow-read --allow-write --allow-sys --env-file=.env npm:drizzle-kit push"
   },
   "nodeModulesDir": "none",
   "imports": {
