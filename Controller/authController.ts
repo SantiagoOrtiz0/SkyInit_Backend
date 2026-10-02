@@ -1,7 +1,11 @@
 import { Context } from "../Dependencies/dependencias.ts";
 import { bcrypt } from "../Dependencies/dependencias.ts";
 import { CrearToken, setTokenCookie, clearTokenCookie } from "../Helpers/jwt.ts";
-import { buscarPorCorreo, buscarPorId, correoExiste, crearUsuario} from "../Model/usuarioModel.ts";
+import { buscarPorCorreo, buscarPorId, correoExiste, crearUsuario,} from "../Model/usuarioModel.ts";
+import { crearTokenReset,buscarTokenReset,borrarTokenReset,actualizarPassword } from "../Model/passwordResetModel.ts";
+import { enviarCorreoRecuperarPassword, enviarCorreoBienvenida } from "../services/emailServices.ts";
+const FRONT_URL = Deno.env.get("FRONT_URL") ?? "http://localhost:4321";
+
 
 // ---REGISTRO---
 export async function registro (ctx: Context) {
@@ -71,6 +75,14 @@ export async function registro (ctx: Context) {
         //Generar token
         const token = await CrearToken(nuevoId, "Usuario");
         setTokenCookie(ctx, token);
+
+        try {
+            await enviarCorreoBienvenida(Correo, Nombre);
+            } catch (mailErr) {
+            console.error("Error enviando correo de bienvenida:", mailErr);
+            // No devolvemos 500: el usuario ya quedó registrado
+        }
+
         ctx.response.status = 201;
         ctx.response.body = {mensaje: "Usuario registrado correctamente", usuario: {usuarioID: nuevoId, nombre: Nombre, correo: Correo, rol: "Usuario", AceptoTerminos: true, token,},
         };
@@ -177,4 +189,109 @@ export async function logout(ctx: Context) {
     clearTokenCookie(ctx);
     ctx.response.status = 200;
     ctx.response.body = {mensaje: "Sesion cerrada exitosamente"};
+}
+
+// --- OLVIDÉ CONTRASEÑA ---
+export async function olvidePassword(ctx: Context) {
+    try {
+        const body = await ctx.request.body.json();
+        const { Correo } = body;
+
+        if (!Correo) {
+        ctx.response.status = 400;
+        ctx.response.body = { error: "El correo es obligatorio" };
+        return;
+        }
+
+        const mensajeOk =
+        "Si el correo está registrado, enviaremos instrucciones para restablecer la contraseña";
+
+        const usuario = await buscarPorCorreo(Correo);
+
+        if (!usuario) {
+        ctx.response.status = 200;
+        ctx.response.body = { mensaje: mensajeOk };
+        return;
+        }
+
+        const token = crypto.randomUUID();
+        const expirationDate = new Date(Date.now() + 60 * 60 * 1000);
+
+        await crearTokenReset(usuario.usuarioID, token, expirationDate);
+
+        const enlace = `${FRONT_URL}/restablecer-password?token=${token}`;
+
+        try {
+        await enviarCorreoRecuperarPassword(
+            usuario.correo,
+            usuario.nombre,
+            enlace,
+        );
+        } catch (mailErr) {
+        console.error("Error enviando correo de recuperación:", mailErr);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "No se pudo enviar el correo" };
+        return;
+        }
+
+        ctx.response.status = 200;
+        ctx.response.body = { mensaje: mensajeOk };
+    } catch (error) {
+        console.error("Error en olvidePassword:", error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error interno del servidor" };
+    }
+}
+
+export async function restablecerPassword(ctx: Context) {
+    try {
+        const body = await ctx.request.body.json();
+        const { Token, Password, Confirmar } = body;
+        const regexPassword =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+        if (!Token || !Password || !Confirmar) {
+        ctx.response.status = 400;
+        ctx.response.body = {
+            error: "Token, Password y Confirmar son obligatorios",
+        };
+        return;
+        }
+
+        if (Password !== Confirmar) {
+        ctx.response.status = 400;
+        ctx.response.body = { error: "Las contraseñas no coinciden" };
+        return;
+        }
+
+        if (!regexPassword.test(Password)) {
+        ctx.response.status = 400;
+        ctx.response.body = {
+            error:
+            "La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial",
+        };
+        return;
+        }
+
+        const fila = await buscarTokenReset(Token);
+        if (!fila) {
+        ctx.response.status = 400;
+        ctx.response.body = { error: "El enlace no es válido o ya expiró" };
+        return;
+        }
+
+        const hash = await bcrypt.hash(Password);
+        await actualizarPassword(fila.userId, hash);
+        await borrarTokenReset(Token);
+
+        ctx.response.status = 200;
+        ctx.response.body = {
+        mensaje:
+            "Contraseña actualizada correctamente. Ya puedes iniciar sesión.",
+        };
+    } catch (error) {
+        console.error("Error en restablecerPassword:", error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error interno del servidor" };
+    }
 }
