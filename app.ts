@@ -1,13 +1,14 @@
 import { Application, oakCors } from "./Dependencies/dependencias.ts";
 import { constructoraRouter } from "./Router/constructoraRouter.ts";
 import { serviciosRouter } from "./Router/serviciosRouter.ts";
-import authRouter    from "./Router/authRouter.ts";
-import googleAuthRouter from "./Router/googleAuthRouter.ts";
-import terminosRouter from "./Router/terminosRouter.ts";
-import propiedadesRouter from "./Router/propiedadesRouter.ts";
-import proyectosRouter from "./Router/proyectosRouter.ts";
+import authRouter             from "./Router/authRouter.ts";
+import googleAuthRouter       from "./Router/googleAuthRouter.ts";
+import terminosRouter         from "./Router/terminosRouter.ts";
+import propiedadesRouter      from "./Router/propiedadesRouter.ts";
+import proyectosRouter        from "./Router/proyectosRouter.ts";
 import { constructoraPanelRouter } from "./Router/constructoraPanelRouter.ts";
 import { inmobiliariaPublicaRouter } from "./Router/inmobiliariaPublicaRouter.ts";
+import usuarioRouter          from "./Router/usuarioRouter.ts";
 import { send } from "./Dependencies/dependencias.ts";
 import { serviciosInmobiliariaRouter } from "./Router/serviciosInmobiliariaRouter.ts";
 
@@ -15,18 +16,16 @@ const app = new Application();
 
 app.use(oakCors({
     origin: Deno.env.get("FRONTEND_URL") ?? "http://localhost:4321",
-    credentials: true,   // necesario para que las cookies de sesión pasen
+    credentials: true,
 }));
 
 app.use(async (ctx, next) => {
     if (ctx.request.url.pathname.startsWith("/uploads/")) {
         try {
-        await send(ctx, ctx.request.url.pathname, {
-            root: Deno.cwd(),
-        });
+            await send(ctx, ctx.request.url.pathname, { root: Deno.cwd() });
         } catch {
-        ctx.response.status = 404;
-        ctx.response.body = { error: "Archivo no encontrado" };
+            ctx.response.status = 404;
+            ctx.response.body = { error: "Archivo no encontrado" };
         }
         return;
     }
@@ -34,7 +33,19 @@ app.use(async (ctx, next) => {
 });
 
 // Registrar routers
-const routes = [serviciosRouter,constructoraRouter,authRouter, googleAuthRouter,terminosRouter,propiedadesRouter, proyectosRouter,constructoraPanelRouter,inmobiliariaPublicaRouter,serviciosInmobiliariaRouter];
+const routes = [
+    serviciosRouter,
+    constructoraRouter,
+    authRouter,
+    googleAuthRouter,
+    terminosRouter,
+    propiedadesRouter,
+    proyectosRouter,
+    constructoraPanelRouter,
+    inmobiliariaPublicaRouter,
+    serviciosInmobiliariaRouter,
+    usuarioRouter,        
+];
 
 routes.forEach(router => {
     app.use(router.routes());
@@ -42,5 +53,4 @@ routes.forEach(router => {
 });
 
 console.log("Servidor corriendo por el puerto 8001");
-
 app.listen({ port: 8001 });
