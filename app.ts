@@ -9,6 +9,7 @@ import proyectosRouter from "./Router/proyectosRouter.ts";
 import { constructoraPanelRouter } from "./Router/constructoraPanelRouter.ts";
 import { inmobiliariaPublicaRouter } from "./Router/inmobiliariaPublicaRouter.ts";
 import { send } from "./Dependencies/dependencias.ts";
+import { serviciosInmobiliariaRouter } from "./Router/serviciosInmobiliariaRouter.ts";
 
 const app = new Application();
 
@@ -33,7 +34,7 @@ app.use(async (ctx, next) => {
 });
 
 // Registrar routers
-const routes = [serviciosRouter,constructoraRouter,authRouter, googleAuthRouter,terminosRouter,propiedadesRouter, proyectosRouter,constructoraPanelRouter,inmobiliariaPublicaRouter];
+const routes = [serviciosRouter,constructoraRouter,authRouter, googleAuthRouter,terminosRouter,propiedadesRouter, proyectosRouter,constructoraPanelRouter,inmobiliariaPublicaRouter,serviciosInmobiliariaRouter];
 
 routes.forEach(router => {
     app.use(router.routes());
