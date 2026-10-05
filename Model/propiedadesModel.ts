@@ -305,22 +305,6 @@ export class Propiedad {
         return Number((resultado as any).insertId ?? 0);
     }
 
-    // Devuelve la url eliminada para borrar el archivo del disco
-    public async EliminarImagen(imagenID: number): Promise<string | null> {
-        const [fila] = await db
-        .select({ url: imagenespropiedad.url, propiedadID: imagenespropiedad.propiedadID })
-        .from(imagenespropiedad)
-        .where(eq(imagenespropiedad.imagenID, imagenID))
-        .limit(1);
-
-    public async InsertarImagen(url: string): Promise<number> {
-        const [resultado] = await db.insert(imagenespropiedad).values({
-            propiedadID: this._idPropiedad!,
-            url,
-        });
-        return Number((resultado as any).insertId ?? 0);
-    }
-
     public async EliminarImagen(imagenID: number): Promise<string | null> {
         const [fila] = await db
             .select({ url: imagenespropiedad.url, propiedadID: imagenespropiedad.propiedadID })
