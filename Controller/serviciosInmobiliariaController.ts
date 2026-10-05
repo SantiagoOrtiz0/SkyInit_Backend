@@ -4,6 +4,7 @@ import {
   ScopeError,
 } from "../Middlewares/inmobiliariasScope.ts";
 import * as Model from "../Model/serviciosInmobiliariaModel.ts";
+import { guardarImagen } from "../Helpers/upload.ts";
 
 function responderOk(
   ctx: Context,
@@ -58,7 +59,7 @@ async function leerJson(ctx: Context): Promise<Record<string, unknown> | null> {
 }
 
 const IMAGEN_RE =
-  /^\/img\/Servicios\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$/i;
+  /^\/(img\/Servicios|uploads\/servicios)\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp)$/i;
 
 const ESTADOS_VALIDOS = ["Activo", "Inactivo"] as const;
 type Estado = (typeof ESTADOS_VALIDOS)[number];
@@ -109,7 +110,7 @@ function validarPayload(body: Record<string, unknown>): {
   if (body.Imagen !== undefined && body.Imagen !== null && body.Imagen !== "") {
     if (typeof body.Imagen !== "string" || !IMAGEN_RE.test(body.Imagen)) {
       errores.Imagen =
-        "Imagen debe ser una ruta tipo /img/Servicios/<uuid>.(jpg|jpeg|png|webp)";
+        "Imagen debe ser una ruta tipo /img/Servicios/<uuid>.ext o /uploads/servicios/<uuid>.ext";
     } else {
       imagenFinal = body.Imagen;
     }
@@ -253,7 +254,7 @@ export async function actualizar(ctx: Context): Promise<void> {
       Descripcion: datos.Descripcion,
       Precio: datos.Precio,
       Estado: datos.Estado,
-      Imagen: datos.Imagen,
+      Imagen: datos.Imagen ?? existente.Imagen,
     });
 
     const actualizado = await Model.obtenerServicio(id, scope.inmobiliariaId);
@@ -327,6 +328,36 @@ export async function eliminar(ctx: Context): Promise<void> {
 
     await Model.eliminarServicio(id, scope.inmobiliariaId);
     responderOk(ctx, { ServicioID: id }, "Servicio eliminado correctamente");
+  } catch (e) {
+    manejarError(ctx, e);
+  }
+}
+
+export async function subirImagen(ctx: Context): Promise<void> {
+  try {
+    await obtenerInmobiliariaScope(ctx);
+
+    let form: FormData;
+    try {
+      form = await ctx.request.body.formData();
+    } catch {
+      responderError(ctx, 422, "Cuerpo multipart inválido. Envía FormData con el campo 'imagen'.");
+      return;
+    }
+
+    const archivo = form.get("imagen");
+    if (!(archivo instanceof File)) {
+      responderError(ctx, 400, "Debes enviar un archivo en el campo 'imagen'");
+      return;
+    }
+
+    const resultado = await guardarImagen(archivo, "servicios");
+    if (!resultado.ok || !resultado.url) {
+      responderError(ctx, 400, resultado.error ?? "No se pudo guardar la imagen");
+      return;
+    }
+
+    responderOk(ctx, { url: resultado.url }, "Imagen subida correctamente", 201);
   } catch (e) {
     manejarError(ctx, e);
   }
