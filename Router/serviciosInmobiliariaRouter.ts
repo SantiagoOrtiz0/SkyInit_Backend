@@ -19,5 +19,5 @@ serviciosInmobiliariaRouter
   .put("/:id", Controller.actualizar)
   .patch("/:id/estado", Controller.cambiarEstado)
   .delete("/:id", Controller.eliminar);
-
+  
 export default serviciosInmobiliariaRouter;
