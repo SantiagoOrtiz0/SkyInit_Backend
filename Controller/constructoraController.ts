@@ -242,3 +242,16 @@ export const deleteConstructora = async (ctx: RouterContext<string>) => {
         };
     }
 };
+
+export const getConstructorasPublicas = async (ctx: Context) => {
+    try {
+        const modelo = new Constructora();
+        const data = await modelo.SeleccionarConstructorasPublicas();
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, data };
+    } catch (error) {
+        console.error("ERROR AL LISTAR CONSTRUCTORAS PUBLICAS:", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, message: "Error al listar constructoras" };
+    }
+};
