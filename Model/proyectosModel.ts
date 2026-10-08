@@ -11,6 +11,7 @@ interface ProyectoData {
     constructoraID?: number | null;
     descripcion?: string | null;
     ubicacion?: string | null;
+    inmobiliariaID?: number | null;
 }
 
 interface FiltrosProyecto {
@@ -243,6 +244,7 @@ export class Proyecto {
             constructoraID: proyecto.constructoraID,
             descripcion: proyecto.descripcion,
             ubicacion: proyecto.ubicacion,
+            inmobiliariaID: proyecto.inmobiliariaID ?? null,
         });
         return (resultado as any).affectedRows ?? 0;
     }
@@ -268,6 +270,7 @@ export class Proyecto {
             constructoraID: proyecto.constructoraID,
             descripcion: proyecto.descripcion,
             ubicacion: proyecto.ubicacion,
+            inmobiliariaID: proyecto.inmobiliariaID ?? null,
         })
         .where(eq(proyectos.proyectoID, this._idProyecto!));
         return (resultado as any).affectedRows ?? 0;
@@ -343,4 +346,48 @@ export class Proyecto {
         return (resultado as any).affectedRows ?? 0;
     }
 
+    // Para el panel de la inmobiliaria
+    public async SeleccionarPorInmobiliaria(inmobiliariaID: number, filtros: FiltrosProyecto = {}) {
+        const condiciones = [eq(proyectos.inmobiliariaID, inmobiliariaID)];
+
+        if (filtros.estadoProyectoID) condiciones.push(eq(proyectos.estadoProyectoID, filtros.estadoProyectoID));
+        if (filtros.ubicacion) condiciones.push(like(proyectos.ubicacion, `%${filtros.ubicacion}%`));
+
+        const query = db.select({
+            proyectoID: proyectos.proyectoID,
+            nombre: proyectos.nombre,
+            descripcion: proyectos.descripcion,
+            estadoProyectoID: proyectos.estadoProyectoID,
+            porcentajeAvance: proyectos.porcentajeAvance,
+            fechaInicio: proyectos.fechaInicio,
+            fechaFin: proyectos.fechaFin,
+            ubicacion: proyectos.ubicacion,
+            constructoraID: proyectos.constructoraID,
+            estadoProyecto: estadosproyecto.descripcion,
+            constructoraNombre: constructoras.nombre,
+        })
+            .from(proyectos)
+            .innerJoin(estadosproyecto, eq(proyectos.estadoProyectoID, estadosproyecto.estadoProyectoID))
+            .leftJoin(constructoras, eq(proyectos.constructoraID, constructoras.constructoraID))
+            .where(and(...condiciones));
+
+        let resultados;
+        switch (filtros.orden) {
+            case "avance_asc": resultados = await query.orderBy(asc(proyectos.porcentajeAvance)); break;
+            case "avance_desc": resultados = await query.orderBy(desc(proyectos.porcentajeAvance)); break;
+            case "fecha": resultados = await query.orderBy(desc(proyectos.fechaInicio)); break;
+            default: resultados = await query;
+        }
+        return await this.AdjuntarImagenPrincipal(resultados);
+    }
+
+    // Para verificar ownership
+    public async PerteneceAInmobiliaria(inmobiliariaID: number): Promise<boolean> {
+        const [fila] = await db
+            .select({ inmobiliariaID: proyectos.inmobiliariaID })
+            .from(proyectos)
+            .where(eq(proyectos.proyectoID, this._idProyecto!))
+            .limit(1);
+        return !!fila && fila.inmobiliariaID === inmobiliariaID;
+    }
 }

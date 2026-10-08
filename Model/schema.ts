@@ -67,9 +67,6 @@ export const usuarios = mysqlTable("usuarios", {
 
 export const constructoras = mysqlTable("constructoras", {
     constructoraID: int("ConstructoraID").autoincrement().primaryKey(),
-    inmobiliariaID: int("InmobiliariaID").references(() => inmobiliarias.inmobiliariaID, {
-        onDelete: "cascade",
-    }),
 
     usuarioID: int("UsuarioID").references(() => usuarios.usuarioID, {
         onDelete: "set null",
@@ -100,6 +97,9 @@ export const propiedades = mysqlTable("propiedades", {
         }),
         agenteID: int("AgenteID").references(() => 
             usuarios.usuarioID, {onDelete: "set null"}),
+        inmobiliariaID: int("InmobiliariaID").references(() => inmobiliarias.inmobiliariaID, {
+          onDelete: "set null",
+        }),
         estado: varchar("Estado", {length: 20}).notNull().default("Disponible"), // Estado disponible, reservada, en mantenimiento y fuera del mercado
         destacada: tinyint("Destacada").notNull().default(0),
         fechaPublicacion: datetime("FechaPublicacion").notNull().default(sql`CURRENT_TIMESTAMP`),
@@ -121,6 +121,9 @@ export const proyectos = mysqlTable("proyectos", {
     constructoraID: int("ConstructoraID").references(() => 
     constructoras.constructoraID, {
         onDelete: "set null",
+    }),
+    inmobiliariaID: int("InmobiliariaID").references(() => inmobiliarias.inmobiliariaID, {
+      onDelete: "set null",
     }),
     descripcion: varchar("Descripcion", {length: 500}),
     ubicacion: varchar("Ubicacion", {length: 255}),
@@ -392,4 +395,12 @@ export const redessociales = mysqlTable("redessociales", {
     .notNull()
     .references(() => plataformas.plataformaID),
   url: varchar("URL", { length: 255 }).notNull(),
+});
+
+export const constructorasInmobiliarias = mysqlTable("constructoras_inmobiliarias", {
+    constructoraID: int("ConstructoraID").notNull()
+        .references(() => constructoras.constructoraID, { onDelete: "cascade" }),
+    inmobiliariaID: int("InmobiliariaID").notNull()
+        .references(() => inmobiliarias.inmobiliariaID, { onDelete: "cascade" }),
+    fechaVinculacion: datetime("FechaVinculacion").notNull().default(sql`CURRENT_TIMESTAMP`),
 });

@@ -137,7 +137,8 @@ export const listarSimilares = async (ctx:any) => {
 export const crearPropiedad = async (ctx:Context) => {
     try {
         const body = await ctx.request.body.json();
-        const {titulo, descripcion, precio, tipoOperacionID, habitaciones, direccion, ciudad, constructoraID, agenteID, estado, destacada} = body;
+        const {titulo, descripcion, precio, tipoOperacionID, habitaciones, direccion, ciudad, constructoraID, agenteID, 
+            estado, destacada} = body;
 
         if (!titulo || !precio || !tipoOperacionID || !direccion) {
             ctx.response.status = 400;
@@ -146,6 +147,7 @@ export const crearPropiedad = async (ctx:Context) => {
         }
 
         const usuario = (ctx.state as any).user;
+        const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
         const idAgente = agenteID ?? Number(usuario?.sub);
 
         if (!idAgente) {
@@ -153,7 +155,7 @@ export const crearPropiedad = async (ctx:Context) => {
             ctx.response.body = {error: "No fue posible determinar el agente de la propiedad"};
             return;
         }
-
+        
         const nuevaPropiedad = new Propiedad({
             titulo,
             descripcion: descripcion ?? null,
@@ -166,6 +168,7 @@ export const crearPropiedad = async (ctx:Context) => {
             agenteID: idAgente,
             estado: estado ?? "Disponible",
             destacada: destacada ?? false,
+            inmobiliariaID: idInmobiliaria,
         });
 
         const filasAfectadas = await nuevaPropiedad.InsertarPropiedad();
@@ -189,6 +192,7 @@ export const editarPropiedad = async (ctx:any) => {
     try {
         const {id} = ctx.params;
         const idPropiedad = Number(id);
+        const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
 
         if (Number.isNaN(idPropiedad)) {
             ctx.response.status = 400;
@@ -202,7 +206,8 @@ export const editarPropiedad = async (ctx:any) => {
         }
 
         const body = await ctx.request.body.json();
-        const {titulo, descripcion, precio, tipoOperacionID, habitaciones, direccion, ciudad, constructoraID, agenteID, estado, destacada} = body;
+        const {titulo, descripcion, precio, tipoOperacionID, habitaciones, direccion, 
+            ciudad, constructoraID, agenteID, estado, destacada} = body;
 
         if (!titulo || !precio || !tipoOperacionID || !direccion) {
             ctx.response.status = 400;
@@ -222,6 +227,7 @@ export const editarPropiedad = async (ctx:any) => {
             agenteID: agenteID ?? null,
             estado: estado ?? "Disponible",
             destacada: destacada ?? false,
+            inmobiliariaID: idInmobiliaria,
         },
         Number(id)
     );
@@ -241,7 +247,7 @@ export const editarPropiedad = async (ctx:any) => {
     }
 };
 
-// Eliminar propiedad (Privado y protege.El acceso debe ser unicamente para agente y administrador)
+// Eliminar propiedad (Privado y protege. El acceso debe ser unicamente para agente y administrador)
 export const eliminarPropiedad = async (ctx: any) => {
     try {
         const {id} = ctx.params;
@@ -276,18 +282,22 @@ export const eliminarPropiedad = async (ctx: any) => {
 };
 // Verifica que el agente autenticado sea dueño de la propiedad (El administrador no tendra restriccion)
 async function puedeGestionarPropiedad(ctx: any, idPropiedad: number): Promise<boolean> {
-    const usuario = ctx.state.user as { sub?: string; rol?: string } |undefined;
-     const modeloPropiedad = new Propiedad(null, idPropiedad);
-    if (usuario?.rol === "Administrador") return true; //Sin restriccion
+    const usuario = ctx.state.user as { sub?: string; rol?: string } | undefined;
+    const modeloPropiedad = new Propiedad(null, idPropiedad);
+
+    if (usuario?.rol === "Administrador") {
+        // El admin solo puede gestionar propiedades de SU inmobiliaria
+        const inmobiliariaID = (ctx.state as any).inmobiliariaID;
+        if (!inmobiliariaID) return false;
+        return await modeloPropiedad.PerteneceAInmobiliaria(inmobiliariaID);
+    }
     if (usuario?.rol === "Constructora") {
         const [fila] = await db
-        .select({ constructoraID: constructoras.constructoraID, estado: constructoras.estado})
-        .from((constructoras))
-        .where(eq(constructoras.usuarioID, Number(usuario?.sub)))
-        .limit(1);
-
+            .select({ constructoraID: constructoras.constructoraID, estado: constructoras.estado })
+            .from(constructoras)
+            .where(eq(constructoras.usuarioID, Number(usuario?.sub)))
+            .limit(1);
         if (!fila || fila.estado !== "Activo") return false;
-
         return await modeloPropiedad.PerteneceAConstructora(fila.constructoraID);
     }
     return await modeloPropiedad.PerteneceAAgente(Number(usuario?.sub));

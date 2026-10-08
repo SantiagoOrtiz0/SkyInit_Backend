@@ -94,7 +94,7 @@ export const postConstructora = async (ctx:Context)=>{
         }
 
         const body = await request.body.json();
-        const {nombre,descripcion,contacto,telefono,correo,estado,logo,ciudad,inmobiliariaID,usuarioID,} = body;
+        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID } = body;
 
 
         if (!nombre || !descripcion) {
@@ -106,7 +106,7 @@ export const postConstructora = async (ctx:Context)=>{
             return;
         }
 
-        const constructora = new Constructora({nombre,descripcion,contacto,telefono,correo,estado,logo,ciudad,inmobiliariaID,usuarioID,});
+        const constructora = new Constructora({ nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID });
 
         await constructora.CrearConstructora();
 
@@ -145,35 +145,10 @@ export const putConstructora = async (ctx: RouterContext<string>)=>{
         }
 
         const body = await request.body.json();
-        const {
-        nombre,
-        descripcion,
-        contacto,
-        telefono,
-        correo,
-        estado,
-        logo,
-        ciudad,
-        inmobiliariaID,
-        usuarioID,
-        } = body;
+        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID } = body;
 
         const constructora = new Constructora(
-        {
-            constructoraID: id,
-            nombre,
-            descripcion,
-            contacto,
-            telefono,
-            correo,
-            estado,
-            logo,
-            ciudad,
-            inmobiliariaID,
-            usuarioID,
-        },
-        id,
-        );
+        {constructoraID: id, nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID}, id);
 
         const resultado = await constructora.ActualizarConstructora();
 
@@ -242,3 +217,63 @@ export const deleteConstructora = async (ctx: RouterContext<string>) => {
         };
     }
 };
+
+    export const postVincularInmobiliaria = async (ctx: RouterContext<string>) => {
+        const { response, params, request } = ctx;
+        try {
+            const id = Number(params.id); // constructoraID
+            if (isNaN(id)) {
+                response.status = 400;
+                response.body = { success: false, message: "ID de constructora no válido" };
+                return;
+            }
+
+            const body = await request.body.json();
+            const inmobiliariaID = Number(body.inmobiliariaID);
+            if (!inmobiliariaID || isNaN(inmobiliariaID)) {
+                response.status = 400;
+                response.body = { success: false, message: "inmobiliariaID es obligatorio" };
+                return;
+            }
+
+            const constructora = new Constructora(null, id);
+            await constructora.VincularInmobiliaria(inmobiliariaID);
+
+            response.status = 201;
+            response.body = { success: true, message: "Constructora vinculada correctamente" };
+        } catch (error) {
+            console.error("ERROR AL VINCULAR INMOBILIARIA:", error);
+            response.status = 500;
+            response.body = { success: false, message: "Error al vincular la inmobiliaria" };
+        }
+    };
+
+    export const deleteDesvincularInmobiliaria = async (ctx: RouterContext<string>) => {
+        const { response, params, request } = ctx;
+        try {
+            const id = Number(params.id); // constructoraID
+            if (isNaN(id)) {
+                response.status = 400;
+                response.body = { success: false, message: "ID de constructora no válido" };
+                return;
+            }
+
+            const body = await request.body.json();
+            const inmobiliariaID = Number(body.inmobiliariaID);
+            if (!inmobiliariaID || isNaN(inmobiliariaID)) {
+                response.status = 400;
+                response.body = { success: false, message: "inmobiliariaID es obligatorio" };
+                return;
+            }
+
+            const constructora = new Constructora(null, id);
+            await constructora.DesvincularInmobiliaria(inmobiliariaID);
+
+            response.status = 200;
+            response.body = { success: true, message: "Constructora desvinculada correctamente" };
+        } catch (error) {
+            console.error("ERROR AL DESVINCULAR INMOBILIARIA:", error);
+            response.status = 500;
+            response.body = { success: false, message: "Error al desvincular la inmobiliaria" };
+        }
+    };

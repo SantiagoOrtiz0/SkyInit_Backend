@@ -14,6 +14,7 @@ interface PropiedadData {
     agenteID?: number | null;
     estado?: "Disponible" | "Reservada" | "En mantenimiento" | "Fuera del mercado";
     destacada?: boolean;
+    inmobiliariaID?: number | null;
 }
 
 interface FiltrosPropiedad {
@@ -209,6 +210,7 @@ export class Propiedad {
             agenteID: propiedad.agenteID,
             estado: propiedad.estado ?? "Disponible",
             destacada: propiedad.destacada ? 1 : 0,
+            inmobiliariaID: propiedad.inmobiliariaID ?? null,
         });
         return (resultado as any).affectedRows ?? 0;
     }
@@ -230,6 +232,7 @@ export class Propiedad {
             agenteID: propiedad.agenteID,
             estado: propiedad.estado,
             destacada: propiedad.destacada === undefined ? undefined : (propiedad.destacada ? 1 : 0),
+            inmobiliariaID: propiedad.inmobiliariaID,
         })
         .where(eq(propiedades.propiedadID, this._idPropiedad!));
         return (resultado as any).affectedRows ?? 0;
@@ -318,4 +321,50 @@ export class Propiedad {
         return fila.url;
     }
 
+    // Para el panel de la inmobiliaria
+    public async SeleccionarPorInmobiliaria(inmobiliariaID: number, filtros: FiltrosPropiedad = {}) {
+        const condiciones = [eq(propiedades.inmobiliariaID, inmobiliariaID)];
+
+        if (filtros.ciudad) condiciones.push(like(propiedades.ciudad, `%${filtros.ciudad}%`));
+        if (filtros.tipoOperacionID) condiciones.push(eq(propiedades.tipoOperacionID, filtros.tipoOperacionID));
+        if (filtros.habitaciones) condiciones.push(eq(propiedades.habitaciones, filtros.habitaciones));
+        if (filtros.precioMin) condiciones.push(gte(propiedades.precio, String(filtros.precioMin)));
+        if (filtros.precioMax) condiciones.push(lte(propiedades.precio, String(filtros.precioMax)));
+
+        const query = db.select({
+            propiedadID: propiedades.propiedadID,
+            titulo: propiedades.titulo,
+            descripcion: propiedades.descripcion,
+            precio: propiedades.precio,
+            habitaciones: propiedades.habitaciones,
+            direccion: propiedades.direccion,
+            ciudad: propiedades.ciudad,
+            estado: propiedades.estado,
+            destacada: propiedades.destacada,
+            fechaPublicacion: propiedades.fechaPublicacion,
+            tipoOperacion: tiposoperacion.descripcion,
+        })
+            .from(propiedades)
+            .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID))
+            .where(and(...condiciones));
+
+        let resultados;
+        switch (filtros.orden) {
+            case "precio_asc": resultados = await query.orderBy(asc(propiedades.precio)); break;
+            case "precio_desc": resultados = await query.orderBy(desc(propiedades.precio)); break;
+            case "fecha": resultados = await query.orderBy(desc(propiedades.fechaPublicacion)); break;
+            default: resultados = await query;
+        }
+        return await this.AdjuntarImagenPrincipal(resultados);
+    }
+
+    // Falta este método — para verificar ownership antes de editar/eliminar
+    public async PerteneceAInmobiliaria(inmobiliariaID: number): Promise<boolean> {
+        const [fila] = await db
+            .select({ inmobiliariaID: propiedades.inmobiliariaID })
+            .from(propiedades)
+            .where(eq(propiedades.propiedadID, this._idPropiedad!))
+            .limit(1);
+        return !!fila && fila.inmobiliariaID === inmobiliariaID;
+    }
 }
