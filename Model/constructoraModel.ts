@@ -1,6 +1,6 @@
 import { db } from "./conexion.ts";
-import { constructoras, propiedades, proyectos, estadosproyecto, inmobiliarias } from "./schema.ts";
-import {eq,sql  } from "../Dependencies/dependencias.ts"
+import { constructoras, propiedades, proyectos, estadosproyecto, constructorasInmobiliarias  } from "./schema.ts";
+import {eq, sql, and } from "../Dependencies/dependencias.ts"
 
 interface constructoraData{
     constructoraID?: number;
@@ -40,7 +40,6 @@ export class Constructora {
 
     public async CrearConstructora() {
         const [resultado] = await db.insert(constructoras).values({
-        inmobiliariaID: this._ObjConstructora?.inmobiliariaID ?? null,
         usuarioID: this._ObjConstructora?.usuarioID ?? null,
         nombre: this._ObjConstructora!.nombre!,
         contacto: this._ObjConstructora?.contacto ?? null,
@@ -59,7 +58,6 @@ export class Constructora {
         const resultado = await db
         .update(constructoras)
         .set({
-            inmobiliariaID: this._ObjConstructora?.inmobiliariaID,
             usuarioID: this._ObjConstructora?.usuarioID,
             nombre: this._ObjConstructora?.nombre,
             contacto: this._ObjConstructora?.contacto,
@@ -142,6 +140,51 @@ export class Constructora {
         return resultado;
     }
 
+    // Vincular constructora ↔ inmobiliaria
+    public async VincularInmobiliaria(inmobiliariaID: number) {
+        const [resultado] = await db.insert(constructorasInmobiliarias).values({
+            constructoraID: this._idConstructora!,
+            inmobiliariaID,
+        });
+        return resultado;
+    }
+
+    // Desvincular constructora ↔ inmobiliaria
+    public async DesvincularInmobiliaria(inmobiliariaID: number) {
+        return await db.delete(constructorasInmobiliarias).where(
+            and(
+                eq(constructorasInmobiliarias.constructoraID, this._idConstructora!),
+                eq(constructorasInmobiliarias.inmobiliariaID, inmobiliariaID),
+            )
+        );
+    }
+
+    // Listar todas las inmobiliarias vinculadas a esta constructora
+    public async ListarInmobiliariasVinculadas() {
+        return await db
+            .select({ inmobiliariaID: constructorasInmobiliarias.inmobiliariaID })
+            .from(constructorasInmobiliarias)
+            .where(eq(constructorasInmobiliarias.constructoraID, this._idConstructora!));
+    }
+
+    // Listar constructoras vinculadas a una inmobiliaria (para panel del admin)
+    public async SeleccionarPorInmobiliaria(inmobiliariaID: number) {
+        return await db
+            .select({
+                constructoraID: constructoras.constructoraID,
+                nombre: constructoras.nombre,
+                estado: constructoras.estado,
+                ciudad: constructoras.ciudad,
+                descripcion: constructoras.descripcion,
+                correo: constructoras.correo,
+                telefono: constructoras.telefono,
+            })
+            .from(constructoras)
+            .innerJoin(
+                constructorasInmobiliarias,
+                eq(constructoras.constructoraID, constructorasInmobiliarias.constructoraID),
+            )
+            .where(eq(constructorasInmobiliarias.inmobiliariaID, inmobiliariaID));
     public async SeleccionarConstructorasPublicas() {
         return await db
             .select({

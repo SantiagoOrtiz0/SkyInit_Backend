@@ -126,6 +126,7 @@ export const listarProyectos = async (ctx:Context) => {
                 return;
             }
 
+            const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
             const nuevoProyecto = new Proyecto({
                 nombre,
                 estadoProyectoID: Number(estadoProyectoID),
@@ -135,6 +136,7 @@ export const listarProyectos = async (ctx:Context) => {
                 constructoraID: idConstructora,
                 descripcion: descripcion ?? null,
                 ubicacion: ubicacion ?? null,
+                inmobiliariaID: idInmobiliaria,
             });
 
             const filasAfectadas = await nuevoProyecto.InsertarProyecto();
@@ -185,6 +187,7 @@ export const listarProyectos = async (ctx:Context) => {
                 return;
             }
             const idConstructora = esAdministrador ? (constructoraID ?? existente.constructoraID) : existente.constructoraID;
+            const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
             const proyectoEditado = new Proyecto({
                 nombre,
                 estadoProyectoID: Number(estadoProyectoID),
@@ -194,6 +197,7 @@ export const listarProyectos = async (ctx:Context) => {
                 constructoraID: idConstructora,
                 descripcion: descripcion ?? null,
                 ubicacion: ubicacion ?? null,
+                inmobiliariaID: idInmobiliaria,
             },
             Number(id)
         );

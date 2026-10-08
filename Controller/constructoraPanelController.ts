@@ -142,6 +142,9 @@ export const postProyecto = async (ctx: Context) => {
             return;
         }
 
+        const inmobiliariasVinculadas = (state as any).inmobiliariasVinculadas as number[] | undefined;
+        const inmobiliariaID = inmobiliariasVinculadas?.[0] ?? null;
+
         const proyecto = new Proyecto({
             nombre,
             estadoProyectoID: 1,
@@ -150,6 +153,7 @@ export const postProyecto = async (ctx: Context) => {
             constructoraID: state.constructoraID,
             descripcion: descripcion ?? null,
             ubicacion: ubicacion ?? null,
+            inmobiliariaID,
         });
 
         const id = await proyecto.InsertarProyecto();
@@ -417,6 +421,9 @@ export const postPropiedadConstructora = async (ctx: Context) => {
             return;
         }
 
+        const inmobiliariasVinculadas = (state as any).inmobiliariasVinculadas as number[] | undefined;
+        const inmobiliariaID = inmobiliariasVinculadas?.[0] ?? null;
+
         const propiedad = new Propiedad({
             titulo,
             descripcion: descripcion ?? null,
@@ -429,6 +436,7 @@ export const postPropiedadConstructora = async (ctx: Context) => {
             agenteID: agenteID ?? null,
             estado: estado ?? "Disponible",
             destacada: destacada ?? false,
+            inmobiliariaID,
         });
 
         const filasAfectadas = await propiedad.InsertarPropiedad();
