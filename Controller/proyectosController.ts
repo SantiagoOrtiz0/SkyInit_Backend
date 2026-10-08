@@ -1,5 +1,6 @@
 import {Context} from "../Dependencies/dependencias.ts";
 import {Proyecto} from "../Model/proyectosModel.ts";
+import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 
 // Listar proyectos con filtros (Publica)
 export const listarProyectos = async (ctx:Context) => {
@@ -125,6 +126,7 @@ export const listarProyectos = async (ctx:Context) => {
                 return;
             }
 
+            const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
             const nuevoProyecto = new Proyecto({
                 nombre,
                 estadoProyectoID: Number(estadoProyectoID),
@@ -134,13 +136,14 @@ export const listarProyectos = async (ctx:Context) => {
                 constructoraID: idConstructora,
                 descripcion: descripcion ?? null,
                 ubicacion: ubicacion ?? null,
+                inmobiliariaID: idInmobiliaria,
             });
 
             const filasAfectadas = await nuevoProyecto.InsertarProyecto();
 
             if (filasAfectadas > 0) {
                 ctx.response.status = 201;
-                ctx.response.body = {message: "Proyecto creado correctamente"};
+                ctx.response.body = {message: "Proyecto creado correctamente", proyectoID: nuevoProyecto._idProyecto};
             } else {
                 ctx.response.status = 409;
                 ctx.response.body = {error: "No se pudo crear el proyecto"};
@@ -184,6 +187,7 @@ export const listarProyectos = async (ctx:Context) => {
                 return;
             }
             const idConstructora = esAdministrador ? (constructoraID ?? existente.constructoraID) : existente.constructoraID;
+            const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
             const proyectoEditado = new Proyecto({
                 nombre,
                 estadoProyectoID: Number(estadoProyectoID),
@@ -193,6 +197,7 @@ export const listarProyectos = async (ctx:Context) => {
                 constructoraID: idConstructora,
                 descripcion: descripcion ?? null,
                 ubicacion: ubicacion ?? null,
+                inmobiliariaID: idInmobiliaria,
             },
             Number(id)
         );
@@ -276,18 +281,68 @@ export const listarProyectos = async (ctx:Context) => {
                 return;
             }
 
-            const filasAfectadas = await modeloProyecto.EliminarProyecto();
+           // Se leen las imagenes antes de borrar, porque la BD borra en cascada
+           const imagenes = await modeloProyecto.ListarImagenes();
+           const filasAfectadas = await modeloProyecto.EliminarProyecto();
 
-            if (filasAfectadas > 0) {
-                ctx.response.status = 200;
-                ctx.response.body = {message: "Proyecto eliminado correctamente"};
-            } else {
-                ctx.response.status = 404;
-                ctx.response.body = {error: "Proyecto no encontrado"};
-            }
+           if (filasAfectadas > 0) {
+            for (const img of imagenes) await eliminarImagenDisco(img.url);
+            ctx.response.status = 200;
+            ctx.response.body = {message: "Proyecto eliminado correctamente"};
+           } else {
+            ctx.response.status = 404;
+            ctx.response.body = {error: "Proyecto no encontrado"};
+           }
         } catch (error) {
             console.log(error);
             ctx.response.status = 500;
             ctx.response.body = {error: "Error al eliminar el proyecto"};
+        }
+    };
+
+    // Subir imagen de un proyecto (solo administrador)
+    export const subirImagenProyecto = async (ctx:any) => {
+        let urlGuardada: string | undefined;
+        try {
+            const idProyecto = Number(ctx.params.id);
+            if (Number.isNaN(idProyecto)) {
+                ctx.response.status = 400;
+                ctx.response.body = {error: "ID de proyecto invalido"};
+                return;
+            }
+
+            const modeloProyecto = new Proyecto(null, idProyecto);
+            const existente = await modeloProyecto.ConsultarProyecto();
+            if (!existente) {
+                ctx.response.status = 404;
+                ctx.response.body = { error: "Proyecto no encontrado"};
+                return;
+            }
+
+            const form = await ctx.request.body.formData();
+            const archivo = form.get("imagen");
+            if (!(archivo instanceof File)) {
+                ctx.response.status = 400;
+                ctx.response.body = {error: "Debes enviar un archivo 'imagen'"};
+                return;
+            }
+
+            const resultado = await guardarImagen(archivo, "proyectos");
+            if (!resultado.ok || !resultado.url) {
+                ctx.response.status = 400;
+                ctx.response.body = {error: resultado.error ?? "No se pudo guardar la imagen"};
+                return;
+            }
+
+            urlGuardada = resultado.url;
+            const imagenID = await modeloProyecto.InsertarImagen(resultado.url);
+
+            ctx.response.status = 201;
+            ctx.response.body = {message: "Imagen agregada", data: {imagenID, url: resultado.url}};
+        } catch (error) {
+            console.log(error);
+            await eliminarImagenDisco(urlGuardada);
+            ctx.response.status = 500;
+            ctx.response.body = {error: "Error al subir la imagen del proyecto"};
         }
     };

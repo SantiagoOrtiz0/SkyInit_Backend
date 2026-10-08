@@ -1,6 +1,7 @@
 import { Context, Next, eq } from "../Dependencies/dependencias.ts";
 import { db } from "../Model/conexion.ts";
 import { constructoras } from "../Model/schema.ts";
+import { constructorasInmobiliarias } from "../Model/schema.ts";
 
 export async function constructoraScopeMiddleware(ctx: Context, next: Next) {
     const usuario = ctx.state.user as { sub?: string } | undefined;
@@ -40,7 +41,13 @@ export async function constructoraScopeMiddleware(ctx: Context, next: Next) {
         return;
     }
 
+    const vinculaciones = await db
+    .select({ inmobiliariaID: constructorasInmobiliarias.inmobiliariaID })
+    .from(constructorasInmobiliarias)
+    .where(eq(constructorasInmobiliarias.constructoraID, fila.constructoraID));
+
     ctx.state.constructoraID = fila.constructoraID;
     ctx.state.constructoraNombre = fila.nombre;
+    ctx.state.inmobiliariasVinculadas = vinculaciones.map(v => v.inmobiliariaID);
     await next();
 }

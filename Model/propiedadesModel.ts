@@ -1,19 +1,38 @@
-    import { eq, and, like, gte ,lte, desc, asc, inArray} from "../Dependencies/dependencias.ts";
-    import { db } from "./conexion.ts";
-    import { propiedades,tiposoperacion,constructoras, usuarios, imagenespropiedad } from "./schema.ts";
+import { eq, and, like, gte ,lte, desc, asc, inArray} from "../Dependencies/dependencias.ts";
+import { db } from "./conexion.ts";
+import { propiedades,tiposoperacion,constructoras, usuarios, imagenespropiedad } from "./schema.ts";
 
-    interface PropiedadData {
-        titulo: string;
-        descripcion?: string | null;
-        precio: string;
-        tipoOperacionID: number;
-        habitaciones?: number | null;
-        direccion: string;
-        ciudad?: string | null;
-        constructoraID?: number | null;
-        agenteID?: number | null;
-        estado?: "Disponible" | "Reservada" | "En mantenimiento" | "Fuera del mercado";
-        destacada?: boolean;
+interface PropiedadData {
+    titulo: string;
+    descripcion?: string | null;
+    precio: string;
+    tipoOperacionID: number;
+    habitaciones?: number | null;
+    direccion: string;
+    ciudad?: string | null;
+    constructoraID?: number | null;
+    agenteID?: number | null;
+    estado?: "Disponible" | "Reservada" | "En mantenimiento" | "Fuera del mercado";
+    destacada?: boolean;
+    inmobiliariaID?: number | null;
+}
+
+interface FiltrosPropiedad {
+    ciudad?: string;
+    tipoOperacionID?: number;
+    habitaciones?: number;
+    precioMin?: number;
+    precioMax?: number;
+    orden?: "precio_asc" | "precio_desc" | "fecha";
+}
+
+export class Propiedad {
+    public _ObjPropiedad: PropiedadData | null;
+    public _idPropiedad: number | null;
+
+    constructor(ObjPropiedad: PropiedadData | null = null, idPropiedad: number | null = null) {
+        this._ObjPropiedad = ObjPropiedad;
+        this._idPropiedad = idPropiedad;
     }
 
     interface FiltrosPropiedad {
@@ -219,46 +238,48 @@
             return await db.select().from(propiedades).where(eq(propiedades.agenteID, agenteID));
         }
 
-        // Registrar una nueva propiedad (Agente, administrador)
-        public async InsertarPropiedad(): Promise<number> {
-            const propiedad = this._ObjPropiedad!;
-            const [resultado] = await db.insert(propiedades).values({
-                titulo: propiedad.titulo,
-                descripcion: propiedad.descripcion,
-                precio: propiedad.precio,
-                tipoOperacionID: propiedad.tipoOperacionID,
-                habitaciones: propiedad.habitaciones,
-                direccion: propiedad.direccion,
-                ciudad: propiedad.ciudad,
-                constructoraID: propiedad.constructoraID,
-                agenteID: propiedad.agenteID,
-                estado: propiedad.estado ?? "Disponible",
-                destacada: propiedad.destacada ? 1 : 0,
-            });
-            return (resultado as any).affectedRows ?? 0;
-        }
+    // Registrar una nueva propiedad (Agente, administrador)
+    public async InsertarPropiedad(): Promise<number> {
+        const propiedad = this._ObjPropiedad!;
+        const [resultado] = await db.insert(propiedades).values({
+            titulo: propiedad.titulo,
+            descripcion: propiedad.descripcion,
+            precio: propiedad.precio,
+            tipoOperacionID: propiedad.tipoOperacionID,
+            habitaciones: propiedad.habitaciones,
+            direccion: propiedad.direccion,
+            ciudad: propiedad.ciudad,
+            constructoraID: propiedad.constructoraID,
+            agenteID: propiedad.agenteID,
+            estado: propiedad.estado ?? "Disponible",
+            destacada: propiedad.destacada ? 1 : 0,
+            inmobiliariaID: propiedad.inmobiliariaID ?? null,
+        });
+        return (resultado as any).affectedRows ?? 0;
+    }
 
-        // Editar propiedades
-        public async ActualizarPropiedad(): Promise<number> {
-            const propiedad = this._ObjPropiedad!;
-            const [resultado] = await db
-            .update(propiedades)
-            .set({
-                titulo: propiedad.titulo,
-                descripcion: propiedad.descripcion,
-                precio: propiedad.precio,
-                tipoOperacionID: propiedad.tipoOperacionID,
-                habitaciones: propiedad.habitaciones,
-                direccion: propiedad.direccion,
-                ciudad: propiedad.ciudad,
-                constructoraID: propiedad.constructoraID,
-                agenteID: propiedad.agenteID,
-                estado: propiedad.estado,
-                destacada: propiedad.destacada === undefined ? undefined : (propiedad.destacada ? 1 : 0),
-            })
-            .where(eq(propiedades.propiedadID, this._idPropiedad!));
-            return (resultado as any).affectedRows ?? 0;
-        }
+    // Editar propiedades
+    public async ActualizarPropiedad(): Promise<number> {
+        const propiedad = this._ObjPropiedad!;
+        const [resultado] = await db
+        .update(propiedades)
+        .set({
+            titulo: propiedad.titulo,
+            descripcion: propiedad.descripcion,
+            precio: propiedad.precio,
+            tipoOperacionID: propiedad.tipoOperacionID,
+            habitaciones: propiedad.habitaciones,
+            direccion: propiedad.direccion,
+            ciudad: propiedad.ciudad,
+            constructoraID: propiedad.constructoraID,
+            agenteID: propiedad.agenteID,
+            estado: propiedad.estado,
+            destacada: propiedad.destacada === undefined ? undefined : (propiedad.destacada ? 1 : 0),
+            inmobiliariaID: propiedad.inmobiliariaID,
+        })
+        .where(eq(propiedades.propiedadID, this._idPropiedad!));
+        return (resultado as any).affectedRows ?? 0;
+    }
 
         // Eliminar propiedades
         public async EliminarPropiedad(): Promise <number> {
@@ -344,3 +365,51 @@
         }
 
     }
+
+    // Para el panel de la inmobiliaria
+    public async SeleccionarPorInmobiliaria(inmobiliariaID: number, filtros: FiltrosPropiedad = {}) {
+        const condiciones = [eq(propiedades.inmobiliariaID, inmobiliariaID)];
+
+        if (filtros.ciudad) condiciones.push(like(propiedades.ciudad, `%${filtros.ciudad}%`));
+        if (filtros.tipoOperacionID) condiciones.push(eq(propiedades.tipoOperacionID, filtros.tipoOperacionID));
+        if (filtros.habitaciones) condiciones.push(eq(propiedades.habitaciones, filtros.habitaciones));
+        if (filtros.precioMin) condiciones.push(gte(propiedades.precio, String(filtros.precioMin)));
+        if (filtros.precioMax) condiciones.push(lte(propiedades.precio, String(filtros.precioMax)));
+
+        const query = db.select({
+            propiedadID: propiedades.propiedadID,
+            titulo: propiedades.titulo,
+            descripcion: propiedades.descripcion,
+            precio: propiedades.precio,
+            habitaciones: propiedades.habitaciones,
+            direccion: propiedades.direccion,
+            ciudad: propiedades.ciudad,
+            estado: propiedades.estado,
+            destacada: propiedades.destacada,
+            fechaPublicacion: propiedades.fechaPublicacion,
+            tipoOperacion: tiposoperacion.descripcion,
+        })
+            .from(propiedades)
+            .innerJoin(tiposoperacion, eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID))
+            .where(and(...condiciones));
+
+        let resultados;
+        switch (filtros.orden) {
+            case "precio_asc": resultados = await query.orderBy(asc(propiedades.precio)); break;
+            case "precio_desc": resultados = await query.orderBy(desc(propiedades.precio)); break;
+            case "fecha": resultados = await query.orderBy(desc(propiedades.fechaPublicacion)); break;
+            default: resultados = await query;
+        }
+        return await this.AdjuntarImagenPrincipal(resultados);
+    }
+
+    // Falta este método — para verificar ownership antes de editar/eliminar
+    public async PerteneceAInmobiliaria(inmobiliariaID: number): Promise<boolean> {
+        const [fila] = await db
+            .select({ inmobiliariaID: propiedades.inmobiliariaID })
+            .from(propiedades)
+            .where(eq(propiedades.propiedadID, this._idPropiedad!))
+            .limit(1);
+        return !!fila && fila.inmobiliariaID === inmobiliariaID;
+    }
+}
