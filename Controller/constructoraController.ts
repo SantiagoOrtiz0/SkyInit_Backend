@@ -255,3 +255,19 @@ export const getConstructorasPublicas = async (ctx: Context) => {
         ctx.response.body = { success: false, message: "Error al listar constructoras" };
     }
 };
+
+export const getInmobiliarias = async (ctx: Context) => {
+    try {
+        const modelo = new Constructora();
+        const data = await modelo.SeleccionarInmobiliarias();
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, data };
+    } catch (error) {
+        console.error("ERROR AL LISTAR INMOBILIARIAS:", error);
+        ctx.response.status = 500;
+        ctx.response.body = {
+        success: false,
+        message: "Error al listar inmobiliarias",
+        };
+    }
+};

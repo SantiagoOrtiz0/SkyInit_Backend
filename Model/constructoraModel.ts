@@ -165,4 +165,15 @@ export class Constructora {
             )
             .where(eq(constructoras.estado, "Activo"));
     }
+
+    public async SeleccionarInmobiliarias() {
+        return await db
+            .select({
+            inmobiliariaID: inmobiliarias.inmobiliariaID,
+            nombre: inmobiliarias.nombre,
+            ciudad: inmobiliarias.ciudad,
+            estado: inmobiliarias.estado,
+            })
+            .from(inmobiliarias);
+    }
 }
