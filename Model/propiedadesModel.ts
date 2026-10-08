@@ -1,6 +1,6 @@
 import { eq, and, like, gte ,lte, desc, asc, inArray} from "../Dependencies/dependencias.ts";
 import { db } from "./conexion.ts";
-import { propiedades,tiposoperacion,constructoras, usuarios, imagenespropiedad } from "./schema.ts";
+import { propiedades,tiposoperacion,constructoras, usuarios, imagenespropiedad} from "./schema.ts";
 
 interface PropiedadData {
     titulo: string;
@@ -25,24 +25,6 @@ interface FiltrosPropiedad {
     precioMax?: number;
     orden?: "precio_asc" | "precio_desc" | "fecha";
 }
-
-export class Propiedad {
-    public _ObjPropiedad: PropiedadData | null;
-    public _idPropiedad: number | null;
-
-    constructor(ObjPropiedad: PropiedadData | null = null, idPropiedad: number | null = null) {
-        this._ObjPropiedad = ObjPropiedad;
-        this._idPropiedad = idPropiedad;
-    }
-
-    interface FiltrosPropiedad {
-        ciudad?: string;
-        tipoOperacionID?: number;
-        habitaciones?: number;
-        precioMin?: number;
-        precioMax?: number;
-        orden?: "precio_asc" | "precio_desc" | "fecha";
-    }
 
     export class Propiedad {
         public _ObjPropiedad: PropiedadData | null;
@@ -364,7 +346,6 @@ export class Propiedad {
             return fila.url;
         }
 
-    }
 
     // Para el panel de la inmobiliaria
     public async SeleccionarPorInmobiliaria(inmobiliariaID: number, filtros: FiltrosPropiedad = {}) {

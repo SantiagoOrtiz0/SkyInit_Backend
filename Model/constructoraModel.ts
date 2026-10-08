@@ -1,5 +1,5 @@
 import { db } from "./conexion.ts";
-import { constructoras, propiedades, proyectos, estadosproyecto, constructorasInmobiliarias  } from "./schema.ts";
+import { constructoras, propiedades, proyectos, estadosproyecto, constructorasInmobiliarias, inmobiliarias  } from "./schema.ts";
 import {eq, sql, and } from "../Dependencies/dependencias.ts"
 
 interface constructoraData{
@@ -185,6 +185,8 @@ export class Constructora {
                 eq(constructoras.constructoraID, constructorasInmobiliarias.constructoraID),
             )
             .where(eq(constructorasInmobiliarias.inmobiliariaID, inmobiliariaID));
+        }
+
     public async SeleccionarConstructorasPublicas() {
         return await db
             .select({
@@ -197,14 +199,14 @@ export class Constructora {
             correo: constructoras.correo,
             logo: constructoras.logo,
             estado: constructoras.estado,
-            inmobiliariaID: constructoras.inmobiliariaID,
+            inmobiliariaID: constructorasInmobiliarias.constructoraID,
             inmobiliariaNombre: inmobiliarias.nombre,
             inmobiliariaCiudad: inmobiliarias.ciudad,
             })
             .from(constructoras)
             .leftJoin(
             inmobiliarias,
-            eq(constructoras.inmobiliariaID, inmobiliarias.inmobiliariaID),
+            eq(constructorasInmobiliarias.constructoraID, inmobiliarias.inmobiliariaID),
             )
             .where(eq(constructoras.estado, "Activo"));
     }
