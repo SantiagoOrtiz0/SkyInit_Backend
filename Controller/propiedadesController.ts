@@ -1,9 +1,41 @@
-import { Context, eq } from "../Dependencies/dependencias.ts";
+import { and, Context, eq } from "../Dependencies/dependencias.ts";
 import { Propiedad } from "../Model/propiedadesModel.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import { db } from "../Model/conexion.ts";
-import { constructoras } from "../Model/schema.ts";
+import { constructoras, roles, usuarios } from "../Model/schema.ts";
 
+
+export const ListarPropiedadesAdmin = async (ctx: any) => {
+    try {
+        ctx.response.status = 200;
+        ctx.response.body = await new Propiedad().SeleccionarTodasAdmin();
+    } catch (error) {
+        console.log(error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error al listar las propiedades" };
+    }
+};
+export const listarAgentes = async (ctx: any) => {
+    try {
+        const agentes = await db
+            .select({
+                usuarioID: usuarios.usuarioID,
+                nombre: usuarios.nombre,
+                correo: usuarios.correo,
+            })
+            .from(usuarios)
+            .innerJoin(roles, eq(usuarios.rolID, roles.rolID))
+            .where(and(eq(roles.nombreRol, "Agente"), eq(usuarios.estadoCuenta, "Activa")))
+            .orderBy(usuarios.nombre);
+
+        ctx.response.status = 200;
+        ctx.response.body = agentes;
+    } catch (error) {
+        console.log(error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error al listar los agentes" };
+    }
+};
 // Listar propiedades con filtros (Publica)
 export const listarPropiedades = async (ctx:Context) => {
     try {
@@ -87,7 +119,10 @@ export const consultarPropiedadDetalle = async (ctx:any) => {
     try {
         const { id } = ctx.params;
         const modeloPropiedad = new Propiedad(null, Number(id));
-        const propiedad = await modeloPropiedad.ConsultarPropiedad();
+
+        const rol = (ctx.state as any).user?.rol;
+        const verTodas = rol === "Administrador" || rol === "Agente";
+        const propiedad = await modeloPropiedad.ConsultarPropiedad(!verTodas);
 
         if (!propiedad) {
             ctx.response.status = 404;
@@ -102,6 +137,7 @@ export const consultarPropiedadDetalle = async (ctx:any) => {
         ctx.response.body = { error: "Error al consultar el detalle de la propiedad"};
     }
 };
+    
 
 //Listar propiedades similares (Publica)
 export const listarSimilares = async (ctx:any) => {
@@ -353,9 +389,9 @@ export const postImagenPropiedad = async (ctx: any) => {
 
 export const deleteImagenPropiedad = async (ctx: any) => {
     try {
-        const { id, imagenID } = ctx.params;
+        const { id, imagenId } = ctx.params;
         const idPropiedad = Number(id);
-        const IdImagen = Number(imagenID);
+        const IdImagen = Number(imagenId);
 
         if (Number.isNaN(idPropiedad) || Number.isNaN(IdImagen)) {
              ctx.response.status = 400;

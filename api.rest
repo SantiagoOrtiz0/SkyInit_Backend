@@ -58,6 +58,8 @@ Content-Type: application/json
 ### CONSTRUCTORAS
 ### ____________________________________________________
 ###
+GET http://localhost:8001/api/constructoras
+###
 GET HTTP://localhost:8001/constructoras
 ###
 POST http://localhost:8001/constructoras
