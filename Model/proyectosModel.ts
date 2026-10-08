@@ -244,6 +244,7 @@ export class Proyecto {
             descripcion: proyecto.descripcion,
             ubicacion: proyecto.ubicacion,
         });
+        this._idProyecto = Number((resultado as any).insertId ?? 0) || null;
         return (resultado as any).affectedRows ?? 0;
     }
 
