@@ -18,8 +18,8 @@ POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-    "Correo": "constructora@gmail.com",
-    "Password": "#SkyInit2026"
+    "Correo": "skyinit2026@gmail.com",
+    "Password": "#Skyinit2026"
 }
 
 ### Logout
@@ -268,3 +268,7 @@ Content-Type: application/json
 ###
 GET http://localhost:8001/panel/constructora/proyectos/5
 Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOSIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6IjI3NzU4MGU2LTliODctNGFlYi05ZTRjLWFkZjg1OWIxMWFkOCIsImV4cCI6MTc5MDkwMTYwMn0.7uIEhW_QHv1P-mnfSgd7FQ3IZYkWOb2D-unkc3mfOEM
+
+###
+GET http://localhost:8001/inmobiliarias
+Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6ImIzMTc0NzRmLWE2ZmYtNDgyZS04YzhiLTAxMmY2ZDRhMmU2ZSIsImV4cCI6MTc5MTQxMDM1Nn0.qlIvoFPHbexKFfya5xW2Ho-sUXGa0WbXOxPDfIWOwMA
