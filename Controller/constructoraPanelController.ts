@@ -3,6 +3,9 @@ import { Constructora } from "../Model/constructoraModel.ts";
 import { Proyecto } from "../Model/proyectosModel.ts";
 import { Propiedad } from "../Model/propiedadesModel.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
+import { bcrypt } from "../Dependencies/dependencias.ts";
+import { buscarPorId, actualizarPerfil } from "../Model/usuarioModel.ts";
+import { inmobiliarias } from "../Model/schema.ts";
 
 // Helper local: castea el state con el que dejamos constructoraID
 type CtxConstructora = Context & { state: { constructoraID: number } };
@@ -26,37 +29,146 @@ export const getPerfil = async (ctx: Context) => {
     try {
         const constructora = new Constructora(null, state.constructoraID);
         const data = await constructora.SeleccionarConstructoraporId();
+        const inmobiliarias = await constructora.ListarInmobiliariasConNombre();
+
         response.status = 200;
-        response.body = { success: true, data };
+        response.body = {
+        success: true,
+        data: {
+            ...data,
+            inmobiliarias, // ← aquí
+        },
+        };
     } catch (error) {
         console.error("ERROR AL OBTENER PERFIL:", error);
         response.status = 500;
-        response.body = { success: false, message: "Error al obtener el perfil" };
+        response.body = {
+        success: false,
+        message: "Error al obtener el perfil",
+        };
     }
 };
 
 export const putPerfil = async (ctx: Context) => {
-    const { response, request, state } = ctx as CtxConstructora;
-    try {
-        const body = await request.body.json();
-        const { nombre, descripcion, contacto, telefono } = body;
+  const { response, request, state } = ctx as CtxConstructora & {
+    state: { constructoraID: number; user: { sub: string } };
+  };
 
-        if (!nombre || !descripcion) {
-            response.status = 400;
-            response.body = { success: false, message: "Nombre y descripcion son obligatorios" };
-            return;
-        }
+  try {
+    const body = await request.body.json();
+    const {
+      nombre,
+      descripcion,
+      contacto,
+      telefono,
+      // opcionales: cambio de contraseña de la cuenta
+      PasswordActual,
+      PasswordNuevo,
+      PasswordConfirmar,
+    } = body;
 
-        const constructora = new Constructora({ nombre, descripcion, contacto, telefono }, state.constructoraID);
-        await constructora.ActualizarPerfil();
-
-        response.status = 200;
-        response.body = { success: true, message: "Perfil actualizado correctamente" };
-    } catch (error) {
-        console.error("ERROR AL ACTUALIZAR PERFIL:", error);
-        response.status = 500;
-        response.body = { success: false, message: "Error al actualizar el perfil" };
+    if (!nombre || !descripcion) {
+      response.status = 400;
+      response.body = {
+        success: false,
+        message: "Nombre y descripcion son obligatorios",
+      };
+      return;
     }
+
+    // 1) Datos de la constructora (como ya tenías)
+    const constructora = new Constructora(
+      { nombre, descripcion, contacto, telefono },
+      state.constructoraID,
+    );
+    await constructora.ActualizarPerfil();
+
+    // 2) Contraseña de la cuenta (solo si enviaron PasswordNuevo)
+    if (PasswordNuevo) {
+      if (!PasswordActual) {
+        response.status = 400;
+        response.body = {
+          success: false,
+          message: "Debes proporcionar tu contraseña actual",
+        };
+        return;
+      }
+      if (PasswordNuevo !== PasswordConfirmar) {
+        response.status = 400;
+        response.body = {
+          success: false,
+          message: "Las contraseñas nuevas no coinciden",
+        };
+        return;
+      }
+
+      const regexPassword =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+      if (!regexPassword.test(PasswordNuevo)) {
+        response.status = 400;
+        response.body = {
+          success: false,
+          message:
+            "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+        };
+        return;
+      }
+
+      const usuarioId = Number(state.user?.sub);
+      if (!usuarioId) {
+        response.status = 401;
+        response.body = { success: false, message: "No autorizado" };
+        return;
+      }
+
+      const usuario = await buscarPorId(usuarioId);
+      if (!usuario) {
+        response.status = 404;
+        response.body = { success: false, message: "Usuario no encontrado" };
+        return;
+      }
+      if (!usuario.contrasenaHash) {
+        response.status = 400;
+        response.body = {
+          success: false,
+          message: "Tu cuenta no tiene contraseña local",
+        };
+        return;
+      }
+
+      const valida = await bcrypt.compare(
+        PasswordActual,
+        usuario.contrasenaHash as string,
+      );
+      if (!valida) {
+        response.status = 401;
+        response.body = {
+          success: false,
+          message: "La contraseña actual es incorrecta",
+        };
+        return;
+      }
+
+      const nuevoHash = await bcrypt.hash(PasswordNuevo);
+      await actualizarPerfil(usuarioId, {
+        nombre: usuario.nombre as string, // no cambiar nombre de usuario aquí
+        telefono: (usuario.telefono as string | null) ?? null,
+        contrasenaHash: nuevoHash,
+      });
+    }
+
+    response.status = 200;
+    response.body = {
+      success: true,
+      message: PasswordNuevo
+        ? "Perfil y contraseña actualizados correctamente"
+        : "Perfil actualizado correctamente",
+    };
+  } catch (error) {
+    console.error("ERROR AL ACTUALIZAR PERFIL:", error);
+    response.status = 500;
+    response.body = { success: false, message: "Error al actualizar el perfil" };
+  }
 };
 
 export const postLogo = async (ctx: Context) => {

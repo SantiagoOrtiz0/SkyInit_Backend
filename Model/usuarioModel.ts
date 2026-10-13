@@ -1,5 +1,5 @@
 import { db } from "./conexion.ts";
-import { usuarios, roles, favoritos, propiedades, imagenespropiedad, serviciossolicitados, serviciosmantenimiento } from "./schema.ts";
+import { usuarios, roles, favoritos, propiedades, imagenespropiedad, serviciossolicitados, serviciosmantenimiento, inmobiliarias } from "./schema.ts";
 import { eq, sql } from "../Dependencies/dependencias.ts";
 
 export interface UsuarioCreate {
@@ -7,7 +7,7 @@ export interface UsuarioCreate {
     Correo: string;
     Password: string;  // Ya hasheado
     Telefono?: string;
-    RolID?: number; 
+    RolID?: number;
     AceptoTerminos?: boolean;
 }
 
@@ -39,6 +39,13 @@ export async function buscarPorCorreo(correo: string) {
     .limit(1);
 
     return resultado[0] ?? null;
+}
+
+export async function actualizarFotoPerfil(id: number, url: string): Promise<void> {
+    await db
+    .update(usuarios)
+    .set({ fotoPerfil: url })
+    .where(eq(usuarios.usuarioID, id));
 }
 
 /** Busca un usuario por ID - sin hash */
@@ -182,4 +189,71 @@ export async function obtenerSolicitudesUsuario(usuarioId: number) {
         .where(eq(serviciossolicitados.usuarioID, usuarioId));
 
     return resultado;
+}
+
+export async function listarUsuariosAdmin() {
+    return await db
+        .select({
+        usuarioID: usuarios.usuarioID,
+        nombre: usuarios.nombre,
+        correo: usuarios.correo,
+        telefono: usuarios.telefono,
+        estadoCuenta: usuarios.estadoCuenta,
+        rolID: usuarios.rolID,
+        nombreRol: roles.nombreRol,
+        inmobiliariaID: usuarios.inmobiliariaID,
+        inmobiliariaNombre: inmobiliarias.nombre,
+        fotoPerfil: usuarios.fotoPerfil,
+        })
+        .from(usuarios)
+        .leftJoin(roles, eq(usuarios.rolID, roles.rolID))
+        .leftJoin(inmobiliarias, eq(usuarios.inmobiliariaID, inmobiliarias.inmobiliariaID));
+}
+
+export async function listarRoles() {
+    return await db.select().from(roles);
+}
+
+export async function crearUsuarioAdmin(data: {
+    nombre: string;
+    correo: string;
+    contrasenaHash: string;
+    telefono?: string | null;
+    rolID: number;
+    inmobiliariaID?: number | null;
+    estadoCuenta?: string;
+    }) {
+    const [resultado] = await db.insert(usuarios).values({
+        nombre: data.nombre,
+        correo: data.correo,
+        contrasenaHash: data.contrasenaHash,
+        telefono: data.telefono ?? null,
+        rolID: data.rolID,
+        inmobiliariaID: data.inmobiliariaID ?? null,
+        estadoCuenta: data.estadoCuenta ?? "Activa",
+        aceptoTerminos: 1,
+    });
+    return Number((resultado as any).insertId ?? 0);
+}
+
+export async function actualizarUsuarioAdmin(
+    id: number,
+    data: {
+        nombre?: string;
+        telefono?: string | null;
+        rolID?: number;
+        inmobiliariaID?: number | null;
+        estadoCuenta?: string;
+        contrasenaHash?: string;
+    },
+    ) {
+    const set: Record<string, unknown> = {};
+    if (data.nombre !== undefined) set.nombre = data.nombre;
+    if (data.telefono !== undefined) set.telefono = data.telefono;
+    if (data.rolID !== undefined) set.rolID = data.rolID;
+    if (data.inmobiliariaID !== undefined) set.inmobiliariaID = data.inmobiliariaID;
+    if (data.estadoCuenta !== undefined) set.estadoCuenta = data.estadoCuenta;
+    if (data.contrasenaHash !== undefined) set.contrasenaHash = data.contrasenaHash;
+
+    await db.update(usuarios).set(set).where(eq(usuarios.usuarioID, id));
 }

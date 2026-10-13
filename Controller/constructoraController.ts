@@ -94,7 +94,7 @@ export const postConstructora = async (ctx:Context)=>{
         }
 
         const body = await request.body.json();
-        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID } = body;
+        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID, inmobiliariaID } = body;
 
 
         if (!nombre || !descripcion) {
@@ -106,15 +106,20 @@ export const postConstructora = async (ctx:Context)=>{
             return;
         }
 
-        const constructora = new Constructora({ nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID });
+        const constructora = new Constructora({
+        nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID,
+        });
 
-        await constructora.CrearConstructora();
+        const nuevoId = await constructora.CrearConstructora();
+
+        // Solo SuperAdmin debería mandar esto (ya lo filtras en front)
+        if (inmobiliariaID && nuevoId) {
+        const c = new Constructora(null, nuevoId);
+        await c.VincularInmobiliaria(Number(inmobiliariaID));
+        }
 
         response.status = 201;
-        response.body = {
-            success: true,
-            mensaje: "Constructora creada correctamente",
-        };
+        response.body = { success: true, mensaje: "Constructora creada correctamente", id: nuevoId };
 
 
 
@@ -145,27 +150,23 @@ export const putConstructora = async (ctx: RouterContext<string>)=>{
         }
 
         const body = await request.body.json();
-        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID } = body;
+        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID, inmobiliariaID } = body;
 
         const constructora = new Constructora(
         {constructoraID: id, nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID}, id);
 
-        const resultado = await constructora.ActualizarConstructora();
+        await constructora.ActualizarConstructora();
 
-        if (!resultado) {
-        response.status = 404;
-        response.body = {
-            success: false,
-            message: "Constructora no encontrada",
-        };
-        return;
+// Reemplazar vínculo único (1 inmobiliaria en el select actual)
+        if (inmobiliariaID !== undefined) {
+        const actuales = await constructora.ListarInmobiliariasVinculadas();
+        for (const a of actuales) {
+            await constructora.DesvincularInmobiliaria(a.inmobiliariaID);
         }
-
-        response.status = 200;
-        response.body = {
-            success: true,
-            message: "Constructora actualizada correctamente",
-        };
+        if (inmobiliariaID) {
+            await constructora.VincularInmobiliaria(Number(inmobiliariaID));
+        }
+        }
     } catch (error) {
         console.error("ERROR AL ACTUALIZAR CONSTRUCTORA:", error);
         response.status = 500;

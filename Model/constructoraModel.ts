@@ -29,8 +29,69 @@ export class Constructora {
     }
 
     public async SeleccionarConstructoras() {
-        return await db.select().from(constructoras);
+    const filas = await db
+        .select({
+        constructoraID: constructoras.constructoraID,
+        usuarioID: constructoras.usuarioID,
+        nombre: constructoras.nombre,
+        contacto: constructoras.contacto,
+        telefono: constructoras.telefono,
+        correo: constructoras.correo,
+        estado: constructoras.estado,
+        logo: constructoras.logo,
+        descripcion: constructoras.descripcion,
+        ciudad: constructoras.ciudad,
+        inmobiliariaID: inmobiliarias.inmobiliariaID,
+        inmobiliariaNombre: inmobiliarias.nombre,
+        })
+        .from(constructoras)
+        .leftJoin(
+        constructorasInmobiliarias,
+        eq(constructoras.constructoraID, constructorasInmobiliarias.constructoraID),
+        )
+        .leftJoin(
+        inmobiliarias,
+        eq(constructorasInmobiliarias.inmobiliariaID, inmobiliarias.inmobiliariaID),
+        );
+
+    // Agrupar: 1 constructora → N inmobiliarias
+    const mapa = new Map<number, any>();
+
+    for (const f of filas) {
+        const id = f.constructoraID;
+        if (!mapa.has(id)) {
+        mapa.set(id, {
+            constructoraID: id,
+            usuarioID: f.usuarioID,
+            nombre: f.nombre,
+            contacto: f.contacto,
+            telefono: f.telefono,
+            correo: f.correo,
+            estado: f.estado,
+            logo: f.logo,
+            descripcion: f.descripcion,
+            ciudad: f.ciudad,
+            inmobiliarias: [] as { inmobiliariaID: number; nombre: string }[],
+        });
+        }
+        if (f.inmobiliariaID != null) {
+        const arr = mapa.get(id).inmobiliarias;
+        if (!arr.some((x: any) => x.inmobiliariaID === f.inmobiliariaID)) {
+            arr.push({
+            inmobiliariaID: f.inmobiliariaID,
+            nombre: f.inmobiliariaNombre ?? "",
+            });
+        }
+        }
     }
+
+    return Array.from(mapa.values()).map((c) => ({
+        ...c,
+        // compat con el front actual (primera vinculada)
+        inmobiliariaID: c.inmobiliarias[0]?.inmobiliariaID ?? null,
+        inmobiliariaNombres: c.inmobiliarias.map((i: any) => i.nombre).join(", ") || null,
+    }));
+}
 
     public async SeleccionarConstructoraporId(){
         const [fila] = await db.select().from(constructoras).where(eq(constructoras.constructoraID, this._idConstructora!))
@@ -38,20 +99,19 @@ export class Constructora {
         return fila ?? null;
     }
 
-    public async CrearConstructora() {
+    public async CrearConstructora(): Promise<number> {
         const [resultado] = await db.insert(constructoras).values({
-        usuarioID: this._ObjConstructora?.usuarioID ?? null,
-        nombre: this._ObjConstructora!.nombre!,
-        contacto: this._ObjConstructora?.contacto ?? null,
-        telefono: this._ObjConstructora?.telefono ?? null,
-        correo: this._ObjConstructora?.correo ?? null,
-        estado: this._ObjConstructora?.estado ?? "Pendiente",
-        logo: this._ObjConstructora?.logo ?? null,
-        descripcion: this._ObjConstructora!.descripcion!,
-        ciudad: this._ObjConstructora?.ciudad ?? null,
+            usuarioID: this._ObjConstructora?.usuarioID ?? null,
+            nombre: this._ObjConstructora!.nombre!,
+            contacto: this._ObjConstructora?.contacto ?? null,
+            telefono: this._ObjConstructora?.telefono ?? null,
+            correo: this._ObjConstructora?.correo ?? null,
+            estado: this._ObjConstructora?.estado ?? "Pendiente",
+            logo: this._ObjConstructora?.logo ?? null,
+            descripcion: this._ObjConstructora!.descripcion!,
+            ciudad: this._ObjConstructora?.ciudad ?? null,
         });
-
-        return resultado;
+        return Number((resultado as any).insertId ?? 0);
     }
 
     public async ActualizarConstructora() {
@@ -220,5 +280,25 @@ export class Constructora {
             estado: inmobiliarias.estado,
             })
             .from(inmobiliarias);
+    }
+    public async ListarInmobiliariasConNombre() {
+        return await db
+            .select({
+            inmobiliariaID: inmobiliarias.inmobiliariaID,
+            nombre: inmobiliarias.nombre,
+            ciudad: inmobiliarias.ciudad,
+            estado: inmobiliarias.estado,
+            })
+            .from(constructorasInmobiliarias)
+            .innerJoin(
+            inmobiliarias,
+            eq(
+                constructorasInmobiliarias.inmobiliariaID,
+                inmobiliarias.inmobiliariaID,
+            ),
+            )
+            .where(
+            eq(constructorasInmobiliarias.constructoraID, this._idConstructora!),
+            );
     }
 }
