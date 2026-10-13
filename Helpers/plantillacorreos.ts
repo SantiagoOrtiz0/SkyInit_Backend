@@ -164,3 +164,43 @@ export function plantillaRecuperarPassword(
 </html>
 `.trim();
 }
+
+function escaparHtml(valor: string): string {
+  return valor
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+export function plantillaEstadoSolicitud(
+  nombre: string,
+  servicio: string,
+  estado: string,
+  solicitudId: number,
+): string {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<body style="margin:0;padding:0;background:#eef1ee;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellspacing="0" cellpadding="0" style="background:#eef1ee;padding:32px 12px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:560px;background:#ffffff;border-radius:16px;">
+        <tr><td style="background:#253229;padding:28px 32px;text-align:center;color:#f5f1e8;">
+          SkyInit
+        </td></tr>
+        <tr><td style="padding:36px 32px;">
+          <h1 style="margin:0 0 16px;font-size:22px;color:#111;">Estado de tu solicitud</h1>
+          <p style="font-size:15px;color:#333;">Hola <strong>${escaparHtml(nombre)}</strong>,</p>
+          <p style="font-size:15px;line-height:1.6;color:#4a5560;">
+            Tu solicitud #${solicitudId} del servicio
+            <strong>${escaparHtml(servicio)}</strong>
+            quedó en estado <strong>${escaparHtml(estado)}</strong>.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`.trim();
+}
