@@ -3,11 +3,13 @@ import { bcrypt } from "../Dependencies/dependencias.ts";
 import {
     buscarPorId,
     actualizarPerfil,
+    actualizarFotoPerfil,
     obtenerFavoritos,
     agregarFavorito,
     eliminarFavorito,
     obtenerSolicitudesUsuario,
 } from "../Model/usuarioModel.ts";
+import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 
 // ─────────────────────────────────────────
 // ACTUALIZAR PERFIL
@@ -84,6 +86,53 @@ export async function actualizarPerfilUsuario(ctx: Context) {
         ctx.response.body = { mensaje: "Perfil actualizado correctamente" };
     } catch (error) {
         console.error("Error en actualizarPerfilUsuario:", error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "Error interno del servidor" };
+    }
+}
+
+// ─────────────────────────────────────────
+// FOTO DE PERFIL
+// ─────────────────────────────────────────
+export async function postFotoPerfil(ctx: Context) {
+    try {
+        const userState = ctx.state.user as { sub?: string };
+        const usuarioId = Number(userState?.sub);
+        if (!usuarioId) {
+            ctx.response.status = 401;
+            ctx.response.body = { error: "No autorizado" };
+            return;
+        }
+
+        const form = await ctx.request.body.formData();
+        const archivo = form.get("foto");
+
+        if (!(archivo instanceof File)) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: "Debes enviar un archivo 'foto'" };
+            return;
+        }
+
+        const resultado = await guardarImagen(archivo, "usuarios");
+        if (!resultado.ok) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: resultado.error };
+            return;
+        }
+
+        // Eliminar foto anterior del disco
+        const usuarioActual = await buscarPorId(usuarioId);
+        await eliminarImagenDisco(usuarioActual?.fotoPerfil);
+
+        await actualizarFotoPerfil(usuarioId, resultado.url!);
+
+        ctx.response.status = 200;
+        ctx.response.body = {
+            mensaje: "Foto de perfil actualizada correctamente",
+            url: resultado.url,
+        };
+    } catch (error) {
+        console.error("Error en postFotoPerfil:", error);
         ctx.response.status = 500;
         ctx.response.body = { error: "Error interno del servidor" };
     }
