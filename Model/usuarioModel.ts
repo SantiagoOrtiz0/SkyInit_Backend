@@ -113,6 +113,14 @@ export async function actualizarPerfil(id: number, data: ActualizarPerfilData): 
         .where(eq(usuarios.usuarioID, id));
 }
 
+/** Actualizar la foto de perfil del usuario */
+export async function actualizarFotoPerfil(id: number, url: string): Promise<void> {
+    await db
+        .update(usuarios)
+        .set({ fotoPerfil: url })
+        .where(eq(usuarios.usuarioID, id));
+}
+
 /** Obtener todas las propiedades guardadas como favorito por el usuario */
 export async function obtenerFavoritos(usuarioId: number) {
     const resultado = await db

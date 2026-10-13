@@ -10,7 +10,7 @@ export interface ArchivoSubido {
 
 export async function guardarImagen(
     archivo: File | null,
-    subcarpeta: "constructoras" | "proyectos" | "perfiles" | "propiedades" | "servicios",
+    subcarpeta: "constructoras" | "proyectos" | "perfiles" | "usuarios" | "propiedades" | "servicios",
 ): Promise<ArchivoSubido> {
     if (!archivo) {
         return { ok: false, error: "No se recibio ningun archivo" };
