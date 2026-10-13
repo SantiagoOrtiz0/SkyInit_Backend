@@ -325,24 +325,18 @@ export const serviciossolicitados = mysqlTable("serviciossolicitados", {
   servicioID: int("ServicioID")
     .notNull()
     .references(() => serviciosmantenimiento.servicioID, { onDelete: "cascade" }),
-  // Inmobiliaria que ofrecia el servicio al momento de la solicitud (heredada de
-  // serviciosmantenimiento.InmobiliariaID). La columna ya existe en la BD real
-  // (con FK ON DELETE SET NULL) pero faltaba declararla aqui, por eso nunca se
-  // leia ni se escribia desde el backend.
   inmobiliariaID: int("InmobiliariaID").references(() => inmobiliarias.inmobiliariaID, {
     onDelete: "set null",
   }),
-  // Opcional: el formulario publico de "Solicitar servicio" no pide una propiedad especifica,
-  // por eso se relaja a nullable (antes era NOT NULL y rompia el insert).
   propiedadID: int("PropiedadID").references(() => propiedades.propiedadID, {
     onDelete: "cascade",
   }),
   usuarioID: int("UsuarioID")
     .notNull()
     .references(() => usuarios.usuarioID, { onDelete: "cascade" }),
-  // Detalles adicionales que el usuario escribe en el modal de solicitud (antes no existia esta columna).
   notas: text("Notas"),
   fechaSolicitud: datetime("FechaSolicitud").notNull().default(sql`CURRENT_TIMESTAMP`),
+  fechaFinalizacion: datetime("FechaFinalizacion"),
   estadoReparacionID: int("EstadoReparacionID").references(
     () => estadosreparacion.estadoReparacionID,
   ),
@@ -404,3 +398,4 @@ export const constructorasInmobiliarias = mysqlTable("constructoras_inmobiliaria
         .references(() => inmobiliarias.inmobiliariaID, { onDelete: "cascade" }),
     fechaVinculacion: datetime("FechaVinculacion").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
