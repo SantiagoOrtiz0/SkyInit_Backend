@@ -4,6 +4,8 @@ import { CrearToken, setTokenCookie, clearTokenCookie } from "../Helpers/jwt.ts"
 import { buscarPorCorreo, buscarPorId, correoExiste, crearUsuario,} from "../Model/usuarioModel.ts";
 import { crearTokenReset,buscarTokenReset,borrarTokenReset,actualizarPassword } from "../Model/passwordResetModel.ts";
 import { enviarCorreoRecuperarPassword, enviarCorreoBienvenida } from "../services/emailServices.ts";
+import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
+import {  actualizarFotoPerfil } from "../Model/usuarioModel.ts";
 const FRONT_URL = Deno.env.get("FRONT_URL") ?? "http://localhost:4321";
 
 
@@ -294,4 +296,50 @@ export async function restablecerPassword(ctx: Context) {
         ctx.response.status = 500;
         ctx.response.body = { error: "Error interno del servidor" };
     }
+}
+export async function subirFotoPerfil(ctx: Context) {
+  try {
+    const userState = ctx.state.user as { sub?: string };
+    const usuarioId = Number(userState?.sub);
+
+    if (!usuarioId) {
+      ctx.response.status = 401;
+      ctx.response.body = { error: "No autorizado" };
+      return;
+    }
+
+    // Oak 17
+    const form = await ctx.request.body.formData();
+    const archivo = form.get("foto") ?? form.get("imagen") ?? form.get("file");
+
+    if (!(archivo instanceof File)) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "Debes enviar un archivo con el campo 'foto'" };
+      return;
+    }
+
+    const resultado = await guardarImagen(archivo, "perfiles");
+    if (!resultado.ok) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: resultado.error ?? "No se pudo guardar" };
+      return;
+    }
+
+    const usuario = await buscarPorId(usuarioId);
+    if (usuario?.fotoPerfil) {
+      await eliminarImagenDisco(usuario.fotoPerfil as string);
+    }
+
+    await actualizarFotoPerfil(usuarioId, resultado.url!);
+
+    ctx.response.status = 200;
+    ctx.response.body = {
+      mensaje: "Foto actualizada correctamente",
+      url: resultado.url,
+    };
+  } catch (error) {
+    console.error("Error en subirFotoPerfil:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Error interno al subir la foto" };
+  }
 }

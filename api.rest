@@ -115,8 +115,8 @@ POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-  "Correo": "constructora.test@skyinit.com",
-  "Password": "Test1234!"
+  "Correo": "constructorajumper@gmail.com",
+  "Password": "#Skyinit2026"
 }
 
 ### Dashboard
@@ -124,8 +124,9 @@ GET http://localhost:8001/panel/constructora/dashboard
 
 ### Perfil
 GET http://localhost:8001/panel/constructora/perfil
+Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIxNyIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6ImY4NGRhYmQ3LTQ3N2QtNDkzNC1hOWQ5LTE3OWM3YzFlZGQxZCIsImV4cCI6MTc5MTQ5NjExNH0.h5bdVe4tMBbI-kMyDcuQH3v2aeXacqXO4X5LyVBOYy8
 
-### Proyectos de mi constructora
+###
 GET http://localhost:8001/panel/constructora/proyectos
 
 ### Propiedades de mi constructora
@@ -272,3 +273,11 @@ Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOSIsInJvb
 ###
 GET http://localhost:8001/inmobiliarias
 Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6ImIzMTc0NzRmLWE2ZmYtNDgyZS04YzhiLTAxMmY2ZDRhMmU2ZSIsImV4cCI6MTc5MTQxMDM1Nn0.qlIvoFPHbexKFfya5xW2Ho-sUXGa0WbXOxPDfIWOwMA
+###
+GET http://localhost:8001/superadmin/usuarios
+Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIyMSIsInJvbCI6IlN1cGVyQWRtaW4iLCJqdGkiOiI3NWYyM2RiNy05NmFmLTQ1YzYtOTM0ZC0xZWQ2NWQ0MjYxODUiLCJleHAiOjE3OTE4MjIxNjN9.TmlpXmZOK1SZKdboxMayACZuFxVL8SfAC6fdr61Bit0
+###
+GET http://localhost:8001/superadmin/inmobiliarias
+Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIyMSIsInJvbCI6IlN1cGVyQWRtaW4iLCJqdGkiOiJjOTVjNjUyNi0xNmQ4LTQxNjgtYTRiYy0yNTFmNmE3YjgyMWIiLCJleHAiOjE3OTE5MTgzOTl9.-L16tPd70FORvIla25tWpBNkCig7e58ITOjNCGaX0c8
+###
+POST http://localhost:8001/auth/perfil/foto
