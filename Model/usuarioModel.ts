@@ -41,13 +41,6 @@ export async function buscarPorCorreo(correo: string) {
     return resultado[0] ?? null;
 }
 
-export async function actualizarFotoPerfil(id: number, url: string): Promise<void> {
-    await db
-    .update(usuarios)
-    .set({ fotoPerfil: url })
-    .where(eq(usuarios.usuarioID, id));
-}
-
 /** Busca un usuario por ID - sin hash */
 export async function buscarPorId(id: number) {
     const resultado = await db.select({
