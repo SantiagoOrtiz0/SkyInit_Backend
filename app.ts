@@ -12,6 +12,7 @@ import usuarioRouter          from "./Router/usuarioRouter.ts";
 import { send } from "./Dependencies/dependencias.ts";
 import { serviciosInmobiliariaRouter } from "./Router/serviciosInmobiliariaRouter.ts";
 import { solicitudesInmobiliariaRouter } from "./Router/solicitudesInmobiliariaRouter.ts";
+import { agentePanelRouter }          from "./Router/agentePanelRouter.ts";
 
 const app = new Application();
 
@@ -46,7 +47,8 @@ const routes = [
     inmobiliariaPublicaRouter,
     serviciosInmobiliariaRouter,
     solicitudesInmobiliariaRouter,
-    usuarioRouter,        
+    usuarioRouter,
+    agentePanelRouter,
 ];
 
 routes.forEach(router => {
