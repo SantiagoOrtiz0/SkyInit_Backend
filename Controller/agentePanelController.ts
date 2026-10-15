@@ -9,6 +9,10 @@
 import type { Context } from "../Dependencies/dependencias.ts";
 import { Propiedad } from "../Model/propiedadesModel.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
+import { Proyecto } from "../Model/proyectosModel.ts";
+import { db } from "../Model/conexion.ts";
+import { date, eq } from "../Dependencies/dependencias.ts";
+import { usuarios } from "../Model/schema.ts";
 
 function paramsDe(ctx: Context): { id?: string; imgId?: string } {
   return (ctx as unknown as { params?: { id?: string; imgId?: string } }).params ?? {};
@@ -391,4 +395,229 @@ export const eliminarImagenMiPropiedad = async (ctx: Context): Promise<void> => 
     ctx.response.status = 500;
     ctx.response.body = { success: false, error: "Error al eliminar la imagen" };
   }
+};
+
+
+export const listarMisProyectos = async (ctx:Context): Promise<void> => {
+  try {
+    const agenteID = getAgenteID(ctx);
+    const usuario = await db
+    .select({ inmobiliariaID: usuarios.inmobiliariaID })
+    .from(usuarios)
+    .where(eq(usuarios.usuarioID, agenteID))
+    .limit(1);
+
+    const inmobiliariaID = usuario[0]?.inmobiliariaID;
+    if (!inmobiliariaID) {
+      ctx.response.status = 403;
+      ctx.response.body = { success: false, error: "No tienes una inmobiliaria asociada" };
+      return;
+    }
+
+    const params = ctx.request.url.searchParams;
+    const proyecto = new Proyecto();
+    const data = await proyecto.SeleccionarPorInmobiliaria(inmobiliariaID, {
+      estadoProyectoID: params.get("estadoProyectoID") ? Number (params.get("estadoProyectoID")) : undefined,
+      orden: (params.get("orden") as "avance_asc" | "avance_desc" | "fecha") ?? undefined,
+    });
+    ctx.response.status = 200;
+    ctx.response.body = { success: true, total: data.length, data}
+  } catch (error) {
+    console.error("[agente:listarMisProyectos", error);
+    ctx.response.status = 500;
+    ctx.response.body = { success: false, error: "Error al listar los proyectos" };
+  }
+};
+
+export const verDetalleProyecto = async (ctx:Context): Promise<void> => {
+  try {
+    const agenteID = getAgenteID(ctx);
+    const id = Number(paramsDe(ctx).id);
+    if (!id) {
+      ctx.response.status = 400;
+      ctx.response.body = { success: false, error: "ID invalido" }; 
+      return;
+    }
+
+    const usuario = await db.select({ inmobiliariaID: usuarios.inmobiliariaID}).from(usuarios)
+    .where(eq(usuarios.usuarioID, agenteID)).limit(1);
+    const inmobiliariaID = usuario[0]?.inmobiliariaID;
+    if (!inmobiliariaID) {
+      ctx.response.status = 403;
+      ctx.response.body = { success: false, error: "Sin inmobiliaria asociada" };
+       return;
+    }
+    
+    const proyecto = new Proyecto(null, id);
+    if (!(await proyecto.PerteneceAInmobiliaria(inmobiliariaID))) {
+      ctx.response.status = 404;
+      ctx.response.body = { success: false, error: "Proyecto no encontrado" };
+      return;
+    }
+
+    const data = await proyecto.ConsultarProyecto();
+    ctx.response.status = 200;
+    ctx.response.body = { success: true, data };
+  } catch (error) {
+    console.error("[agente:verDetalleProyecto", error);
+    ctx.response.status = 500;
+    ctx.response.body = { success: false, error: "Error al consultar el proyecto" };
+  }
+};
+
+export const editarMiProyecto = async (ctx: Context): Promise<void> => {
+    try {
+        const agenteID = getAgenteID(ctx);
+        const id = Number(paramsDe(ctx).id);
+        if (!id) { 
+          ctx.response.status = 400; 
+          ctx.response.body = { success: false, error: "ID inválido" }; return; }
+
+        const usuario = await db.select({ inmobiliariaID: usuarios.inmobiliariaID }).from(usuarios).where(eq(usuarios.usuarioID, agenteID)).limit(1);
+        const inmobiliariaID = usuario[0]?.inmobiliariaID;
+        if (!inmobiliariaID) {
+          ctx.response.status = 403; 
+          ctx.response.body = { success: false, error: "Sin inmobiliaria asociada" }; return; }
+
+        const proyecto = new Proyecto(null, id);
+        if (!(await proyecto.PerteneceAInmobiliaria(inmobiliariaID))) {
+            ctx.response.status = 404;
+            ctx.response.body = { success: false, error: "Proyecto no encontrado" };
+            return;
+        }
+
+        const body = await ctx.request.body.json();
+        const { nombre, estadoProyectoID, porcentajeAvance, fechaInicio, fechaFin, descripcion, ubicacion } = body;
+
+        if (!nombre?.trim() || !estadoProyectoID) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "Nombre y estadoProyectoID son obligatorios" };
+            return;
+        }
+        if (![1, 2, 3].includes(Number(estadoProyectoID))) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "estadoProyectoID inválido (1=Planificado, 2=En construcción, 3=Finalizado)" };
+            return;
+        }
+        const pct = Number(porcentajeAvance ?? 0);
+        if (isNaN(pct) || pct < 0 || pct > 100) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El porcentaje debe estar entre 0 y 100" };
+            return;
+        }
+        if (fechaInicio && fechaFin && new Date(fechaInicio) > new Date(fechaFin)) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "La fecha de inicio no puede ser posterior a la fecha de fin" };
+            return;
+        }
+
+        const proyectoEdit = new Proyecto({
+            nombre: nombre.trim(),
+            estadoProyectoID: Number(estadoProyectoID),
+            porcentajeAvance: String(pct),
+            fechaInicio: fechaInicio ?? null,
+            fechaFin: fechaFin ?? null,
+            descripcion: descripcion ?? null,
+            ubicacion: ubicacion ?? null,
+        }, id);
+
+        await proyectoEdit.ActualizarProyecto();
+        await proyectoEdit.RegistrarAvance(agenteID, pct, "Actualización desde panel agente");
+
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, message: "Proyecto actualizado correctamente" };
+    } catch (error) {
+        console.error("[agente:editarMiProyecto]", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error al actualizar el proyecto" };
+    }
+};
+
+export const subirImagenMiProyecto = async (ctx: Context): Promise<void> => {
+    let urlGuardada: string | undefined;
+    try {
+        const agenteID = getAgenteID(ctx);
+        const id = Number(paramsDe(ctx).id);
+        if (!id) { ctx.response.status = 400; ctx.response.body = { success: false, error: "ID inválido" }; return; }
+
+        const usuario = await db.select({ inmobiliariaID: usuarios.inmobiliariaID }).from(usuarios).where(eq(usuarios.usuarioID, agenteID)).limit(1);
+        const inmobiliariaID = usuario[0]?.inmobiliariaID;
+        if (!inmobiliariaID) { ctx.response.status = 403; ctx.response.body = { success: false, error: "Sin inmobiliaria asociada" }; return; }
+
+        const proyecto = new Proyecto(null, id);
+        if (!(await proyecto.PerteneceAInmobiliaria(inmobiliariaID))) {
+            ctx.response.status = 404;
+            ctx.response.body = { success: false, error: "Proyecto no encontrado" };
+            return;
+        }
+        const form = await ctx.request.body.formData();
+        const archivo = form.get("imagen");
+        if (!(archivo instanceof File)) { 
+          ctx.response.status = 400; 
+          ctx.response.body = { success: false, error: "Debes enviar un archivo 'imagen'" };
+           return; 
+          }
+        if (!archivo.type.startsWith("image/")) {
+           ctx.response.status = 400; 
+           ctx.response.body = { success: false, error: "El archivo debe ser una imagen válida" }; 
+           return; 
+          }
+
+        const resultado = await guardarImagen(archivo, "proyectos");
+        if (!resultado.ok || !resultado.url) { ctx.response.status = 400; ctx.response.body = { success: false, error: resultado.error }; return; }
+
+        urlGuardada = resultado.url;
+        const imagenID = await proyecto.InsertarImagen(resultado.url);
+        ctx.response.status = 201;
+        ctx.response.body = { success: true, message: "Imagen agregada", data: { imagenID, url: resultado.url } };
+    } catch (error) {
+        console.error("[agente:subirImagenMiProyecto]", error);
+        if (urlGuardada) await eliminarImagenDisco(urlGuardada);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error al subir la imagen" };
+    }
+};
+
+export const eliminarImagenMiProyecto = async (ctx: Context): Promise<void> => {
+    try {
+        const agenteID = getAgenteID(ctx);
+        const id = Number(paramsDe(ctx).id);
+        const imagenID = Number((paramsDe(ctx) as any).imagenId);
+        if (!id || !imagenID) { 
+          ctx.response.status = 400;
+          ctx.response.body = { success: false, error: "IDs inválidos" };
+           return; 
+          }
+
+        const usuario = await db.select({ inmobiliariaID: usuarios.inmobiliariaID }).from(usuarios).
+        where(eq(usuarios.usuarioID, agenteID)).limit(1);
+        const inmobiliariaID = usuario[0]?.inmobiliariaID;
+        if (!inmobiliariaID) {
+           ctx.response.status = 403;
+            ctx.response.body = { success: false, error: "Sin inmobiliaria asociada" }; 
+            return; 
+          }
+
+        const proyecto = new Proyecto(null, id);
+        if (!(await proyecto.PerteneceAInmobiliaria(inmobiliariaID))) {
+            ctx.response.status = 404;
+            ctx.response.body = { success: false, error: "Proyecto no encontrado" };
+            return;
+        }
+
+        const url = await proyecto.EliminarImagen(imagenID);
+        if (!url) { 
+          ctx.response.status = 404; 
+          ctx.response.body = { success: false, error: "Imagen no encontrada" }; 
+          return; 
+        }
+
+        await eliminarImagenDisco(url);
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, message: "Imagen eliminada correctamente" };
+    } catch (error) {
+        console.error("[agente:eliminarImagenMiProyecto]", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error al eliminar la imagen" };
+    }
 };
