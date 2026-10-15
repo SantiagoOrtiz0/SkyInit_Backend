@@ -281,3 +281,22 @@ GET http://localhost:8001/superadmin/inmobiliarias
 Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIyMSIsInJvbCI6IlN1cGVyQWRtaW4iLCJqdGkiOiJjOTVjNjUyNi0xNmQ4LTQxNjgtYTRiYy0yNTFmNmE3YjgyMWIiLCJleHAiOjE3OTE5MTgzOTl9.-L16tPd70FORvIla25tWpBNkCig7e58ITOjNCGaX0c8
 ###
 POST http://localhost:8001/auth/perfil/foto
+###
+GET http://localhost:8001/superadmin/constructoras
+Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiU3VwZXJBZG1pbiIsImp0aSI6IjI5NDE2M2Q4LTE2MGEtNDg2NS05NzFjLWM0YTU5ZDM1OTNhZSIsImV4cCI6MTc5MjAyODU4M30.2vp1A-wn4txLwLGJ0oQfB8GbZSc71fwsjISe1921lTc
+###
+PUT http://localhost:8001/superadmin/constructoras/8
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiU3VwZXJBZG1pbiIsImp0aSI6IjI5NDE2M2Q4LTE2MGEtNDg2NS05NzFjLWM0YTU5ZDM1OTNhZSIsImV4cCI6MTc5MjAyODU4M30.2vp1A-wn4txLwLGJ0oQfB8GbZSc71fwsjISe1921lTc
+Content-Type: application/json
+
+{
+  "nombre": "Constructora BioCasa",
+  "descripcion": "Contribuimos en el crecimiento sin dañar al planeta",
+  "ciudad": "Duitama",
+  "estado": "Activo",
+  "correo": "constructorabiocasa@gmail.com",
+  "telefono": "3124143860",
+  "contacto": "Instagram",
+  "inmobiliariaIDs": [1,2],
+  "usuario": null
+}

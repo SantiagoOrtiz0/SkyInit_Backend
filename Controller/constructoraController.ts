@@ -15,7 +15,7 @@ export const getConstructoras = async (ctx:Context) => {
             success:true,
             data:lista,
         };
-        
+
     } catch (error) {
         console.error("ERROR AL LISTAR CONSTRUCTORAS:" , error);
         response.status = 500;
@@ -23,7 +23,7 @@ export const getConstructoras = async (ctx:Context) => {
             success: false,
             message: "Error al listar constructoras"
         }
-        
+
     };
 
 
@@ -134,9 +134,8 @@ export const postConstructora = async (ctx:Context)=>{
     }
 }
 
-export const putConstructora = async (ctx: RouterContext<string>)=>{
-    
-    const {response,params,request}= ctx;
+export const putConstructora = async (ctx: RouterContext<string>) => {
+    const { response, params, request } = ctx;
     try {
         const id = Number(params.id);
 
@@ -144,20 +143,43 @@ export const putConstructora = async (ctx: RouterContext<string>)=>{
         response.status = 400;
         response.body = {
             success: false,
-            mensaje: "El ID de la constructora no es válido",
+            message: "El ID de la constructora no es válido",
         };
         return;
         }
 
         const body = await request.body.json();
-        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID, inmobiliariaID } = body;
+        const {
+        nombre,
+        descripcion,
+        contacto,
+        telefono,
+        correo,
+        estado,
+        logo,
+        ciudad,
+        usuarioID,
+        inmobiliariaID,
+        } = body;
 
         const constructora = new Constructora(
-        {constructoraID: id, nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID}, id);
+        {
+            constructoraID: id,
+            nombre,
+            descripcion,
+            contacto,
+            telefono,
+            correo,
+            estado,
+            logo,
+            ciudad,
+            usuarioID,
+        },
+        id,
+        );
 
         await constructora.ActualizarConstructora();
 
-// Reemplazar vínculo único (1 inmobiliaria en el select actual)
         if (inmobiliariaID !== undefined) {
         const actuales = await constructora.ListarInmobiliariasVinculadas();
         for (const a of actuales) {
@@ -167,15 +189,22 @@ export const putConstructora = async (ctx: RouterContext<string>)=>{
             await constructora.VincularInmobiliaria(Number(inmobiliariaID));
         }
         }
+
+        // ← ESTO FALTABA
+        response.status = 200;
+        response.body = {
+        success: true,
+        message: "Constructora actualizada correctamente",
+        };
     } catch (error) {
         console.error("ERROR AL ACTUALIZAR CONSTRUCTORA:", error);
         response.status = 500;
         response.body = {
-            success: false,
-            message: "Error al actualizar la constructora",
+        success: false,
+        message: "Error al actualizar la constructora",
         };
     }
-}
+};
 
 export const deleteConstructora = async (ctx: RouterContext<string>) => {
     const { response, params } = ctx;
@@ -306,3 +335,5 @@ export const getInmobiliarias = async (ctx: Context) => {
         };
     }
 };
+
+

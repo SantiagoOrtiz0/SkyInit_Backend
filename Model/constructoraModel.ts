@@ -1,11 +1,11 @@
 import { db } from "./conexion.ts";
-import { constructoras, propiedades, proyectos, estadosproyecto, constructorasInmobiliarias, inmobiliarias  } from "./schema.ts";
+import { constructoras, propiedades, proyectos, estadosproyecto, constructorasInmobiliarias, inmobiliarias, usuarios  } from "./schema.ts";
 import {eq, sql, and } from "../Dependencies/dependencias.ts"
 
 interface constructoraData{
     constructoraID?: number;
     inmobiliariaID?: number ;
-    usuarioID?: number ;
+    usuarioID?: number | null  ;
     nombre?: string;
     contacto?: string ;
     telefono?: string ;
@@ -43,8 +43,11 @@ export class Constructora {
         ciudad: constructoras.ciudad,
         inmobiliariaID: inmobiliarias.inmobiliariaID,
         inmobiliariaNombre: inmobiliarias.nombre,
+        usuarioCorreo: usuarios.correo,
+        usuarioNombre: usuarios.nombre,
         })
         .from(constructoras)
+        .leftJoin(usuarios, eq(constructoras.usuarioID, usuarios.usuarioID))
         .leftJoin(
         constructorasInmobiliarias,
         eq(constructoras.constructoraID, constructorasInmobiliarias.constructoraID),
@@ -71,6 +74,8 @@ export class Constructora {
             logo: f.logo,
             descripcion: f.descripcion,
             ciudad: f.ciudad,
+            usuarioCorreo: f.usuarioCorreo ?? null,
+            usuarioNombre: f.usuarioNombre ?? null,
             inmobiliarias: [] as { inmobiliariaID: number; nombre: string }[],
         });
         }
@@ -300,5 +305,27 @@ export class Constructora {
             .where(
             eq(constructorasInmobiliarias.constructoraID, this._idConstructora!),
             );
+    }
+
+    public async InsertarConstructora(): Promise<number> {
+        const [resultado] = await db.insert(constructoras).values({
+            nombre: this._ObjConstructora!.nombre!,
+            descripcion: this._ObjConstructora!.descripcion!,
+            contacto: this._ObjConstructora?.contacto ?? null,
+            telefono: this._ObjConstructora?.telefono ?? null,
+            correo: this._ObjConstructora?.correo ?? null,
+            ciudad: this._ObjConstructora?.ciudad ?? null,
+            estado: this._ObjConstructora?.estado ?? "Pendiente",
+            usuarioID: this._ObjConstructora?.usuarioID ?? null,
+        });
+        return Number((resultado as { insertId?: number }).insertId ?? 0);
+    }
+
+    /** Asigna o quita el usuario del panel */
+    public async AsignarUsuario(usuarioID: number | null): Promise<void> {
+        await db
+            .update(constructoras)
+            .set({ usuarioID })
+            .where(eq(constructoras.constructoraID, this._idConstructora!));
     }
 }

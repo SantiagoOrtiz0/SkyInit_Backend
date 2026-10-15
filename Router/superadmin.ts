@@ -6,6 +6,9 @@ import {
   postUsuario,
   putUsuario,
   getInmobiliarias,
+  getConstructorasSA,
+  postConstructoraSA,
+  putConstructoraSA
 } from "../Controller/superadmincontroller.ts";
 
 const superadminRouter = new Router();
@@ -16,6 +19,9 @@ superadminRouter
   .post("/superadmin/usuarios", ...proteger, postUsuario)
   .put("/superadmin/usuarios/:id", ...proteger, putUsuario)
   .get("/superadmin/inmobiliarias", ...proteger, getInmobiliarias)
-  .get("/superadmin/roles", ...proteger, getRoles);
+  .get("/superadmin/roles", ...proteger, getRoles)
+  .get("/superadmin/constructoras", ...proteger, getConstructorasSA)
+  .post("/superadmin/constructoras", ...proteger, postConstructoraSA)
+  .put("/superadmin/constructoras/:id", ...proteger, putConstructoraSA);
 
 export { superadminRouter };
