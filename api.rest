@@ -18,8 +18,8 @@ POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-    "Correo": "andriu.geova@gmail.com",
-    "Password": "#Skyinit2026"
+    "Correo": "constructorajumper@gmail.com",
+    "Password": "Constructora#2026"
 }
 
 ###

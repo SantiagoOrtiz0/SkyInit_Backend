@@ -249,33 +249,60 @@ export class Proyecto {
         this._idProyecto = Number((resultado as any).insertId ?? 0) || null;
         return (resultado as any).affectedRows ?? 0;
     }
+public async ActualizarProyecto(): Promise<number> {
+    const proyecto = this._ObjProyecto!;
 
-    public async ActualizarProyecto(): Promise<number> {
-        const proyecto = this._ObjProyecto!;
-
-
-        const toDate = (v: string | Date | null | undefined): Date | null => {
+    const toDate = (v: string | Date | null | undefined): Date | null => {
         if (v == null || v === "") return null;
         if (v instanceof Date) return v;
         const d = new Date(v);
-        return isNaN(d.getTime()) ? null : d;};
+        return isNaN(d.getTime()) ? null : d;
+    };
 
-        const [resultado] = await db
+    const datos: Record<string, unknown> = {};
+
+    if (proyecto.nombre !== undefined)           datos.nombre = proyecto.nombre;
+    if (proyecto.estadoProyectoID !== undefined) datos.estadoProyectoID = proyecto.estadoProyectoID;
+    if (proyecto.porcentajeAvance !== undefined) datos.porcentajeAvance = proyecto.porcentajeAvance;
+    if (proyecto.fechaInicio !== undefined)      datos.fechaInicio = toDate(proyecto.fechaInicio);
+    if (proyecto.fechaFin !== undefined)         datos.fechaFin = toDate(proyecto.fechaFin);
+    if (proyecto.descripcion !== undefined)      datos.descripcion = proyecto.descripcion;
+    if (proyecto.ubicacion !== undefined)        datos.ubicacion = proyecto.ubicacion;
+    if (proyecto.inmobiliariaID !== undefined)   datos.inmobiliariaID = proyecto.inmobiliariaID;
+
+    const [resultado] = await db
         .update(proyectos)
-        .set({
-            nombre: proyecto.nombre,
-            estadoProyectoID: proyecto.estadoProyectoID,
-            porcentajeAvance: proyecto.porcentajeAvance,
-            fechaInicio:toDate( proyecto.fechaInicio),
-            fechaFin:toDate( proyecto.fechaFin),
-            constructoraID: proyecto.constructoraID,
-            descripcion: proyecto.descripcion,
-            ubicacion: proyecto.ubicacion,
-            inmobiliariaID: proyecto.inmobiliariaID ?? null,
-        })
+        .set(datos)
         .where(eq(proyectos.proyectoID, this._idProyecto!));
-        return (resultado as any).affectedRows ?? 0;
-    }
+
+    return (resultado as any).affectedRows ?? 0;
+}
+    // public async ActualizarProyecto(): Promise<number> {
+    //     const proyecto = this._ObjProyecto!;
+
+
+    //     const toDate = (v: string | Date | null | undefined): Date | null => {
+    //     if (v == null || v === "") return null;
+    //     if (v instanceof Date) return v;
+    //     const d = new Date(v);
+    //     return isNaN(d.getTime()) ? null : d;};
+
+    //     const [resultado] = await db
+    //     .update(proyectos)
+    //     .set({
+    //         nombre: proyecto.nombre,
+    //         estadoProyectoID: proyecto.estadoProyectoID,
+    //         porcentajeAvance: proyecto.porcentajeAvance,
+    //         fechaInicio:toDate( proyecto.fechaInicio),
+    //         fechaFin:toDate( proyecto.fechaFin),
+    //         constructoraID: proyecto.constructoraID,
+    //         descripcion: proyecto.descripcion,
+    //         ubicacion: proyecto.ubicacion,
+    //         inmobiliariaID: proyecto.inmobiliariaID ?? null,
+    //     })
+    //     .where(eq(proyectos.proyectoID, this._idProyecto!));
+    //     return (resultado as any).affectedRows ?? 0;
+    // }
 
     // Eliminar proyectos 
     public async EliminarProyecto(): Promise<number> {

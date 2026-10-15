@@ -5,13 +5,13 @@ import {
   getRoles,
   postUsuario,
   putUsuario,
-  getInmobiliarias,
   getConstructorasSA,
   postConstructoraSA,
   putConstructoraSA
 
 } from "../Controller/superadmincontroller.ts";
-import {
+import {    
+    getInmobiliarias,
     postInmobiliaria,
     putInmobiliaria,
     patchAsignarUsuarios,
