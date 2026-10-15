@@ -519,10 +519,10 @@ export const editarMiProyecto = async (ctx: Context): Promise<void> => {
             fechaFin: fechaFin ?? null,
             descripcion: descripcion ?? null,
             ubicacion: ubicacion ?? null,
+            inmobiliariaID: inmobiliariaID,
         }, id);
 
         await proyectoEdit.ActualizarProyecto();
-        await proyectoEdit.RegistrarAvance(agenteID, pct, "Actualización desde panel agente");
 
         ctx.response.status = 200;
         ctx.response.body = { success: true, message: "Proyecto actualizado correctamente" };
