@@ -26,6 +26,11 @@ import {
   eliminarMiPropiedad,
   subirImagenMiPropiedad,
   eliminarImagenMiPropiedad,
+  listarMisProyectos,
+  editarMiProyecto,
+  verDetalleProyecto,
+  subirImagenMiProyecto,
+  eliminarImagenMiProyecto,
 } from "../Controller/agentePanelController.ts";
 
 const agentePanelRouter = new Router();
@@ -150,5 +155,13 @@ agentePanelRouter.delete(
   ...guardarAcceso,
   eliminarImagenMiPropiedad,
 );
+
+// --Proyectos ---------------------
+agentePanelRouter
+  .get("/api/agente/panel/proyectos", ...guardarAcceso, listarMisProyectos)
+  .get("/api/agente/panel/proyectos/:id", ...guardarAcceso, verDetalleProyecto)
+  .put("/api/agente/panel/proyectos/:id", ...guardarAcceso, editarMiProyecto)
+  .post("/api/agente/panel/proyectos/:id/imagenes", ...guardarAcceso, subirImagenMiProyecto)
+  .delete("/api/agente/panel/proyectos/:id/imagenes/:imagenId", ...guardarAcceso, eliminarImagenMiProyecto);
 
 export { agentePanelRouter };
