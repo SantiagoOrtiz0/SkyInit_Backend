@@ -26,6 +26,8 @@ interface FiltrosPropiedad {
     orden?: "precio_asc" | "precio_desc" | "fecha";
 }
 
+
+
 export class Propiedad {
     public _ObjPropiedad: PropiedadData | null;
     public _idPropiedad: number | null;
@@ -210,7 +212,11 @@ export class Propiedad {
     }
 
     public async SeleccionarPorAgente(agenteID: number) {
-        return await db.select().from(propiedades).where(eq(propiedades.agenteID, agenteID));
+        const filas = await db
+            .select()
+            .from(propiedades)
+            .where(eq(propiedades.agenteID, agenteID));
+        return await this.AdjuntarImagenPrincipal(filas);
     }
 
     public async InsertarPropiedad(): Promise<number> {
@@ -228,7 +234,7 @@ export class Propiedad {
             estado: propiedad.estado ?? "Disponible",
             destacada: propiedad.destacada ? 1 : 0,
         });
-        return (resultado as any).affectedRows ?? 0;
+        return Number((resultado as { insertId?: number }).insertId ?? 0);
     }
 
     public async ActualizarPropiedad(): Promise<number> {

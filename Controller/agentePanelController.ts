@@ -101,6 +101,7 @@ export const verDetallePropiedad = async (ctx: Context): Promise<void> => {
   }
 };
 
+
 export const crearMiPropiedad = async (ctx: Context): Promise<void> => {
   try {
     const agenteID = getAgenteID(ctx);
@@ -113,16 +114,19 @@ export const crearMiPropiedad = async (ctx: Context): Promise<void> => {
       ctx.response.body = { success: false, error: "El campo 'titulo' es obligatorio" };
       return;
     }
+
     if (!precio || isNaN(Number(precio)) || Number(precio) <= 0) {
       ctx.response.status = 400;
       ctx.response.body = { success: false, error: "El campo 'precio' debe ser un número positivo" };
       return;
     }
+
     if (!tipoOperacionID || !Number.isInteger(Number(tipoOperacionID))) {
       ctx.response.status = 400;
       ctx.response.body = { success: false, error: "El campo 'tipoOperacionID' es obligatorio" };
       return;
     }
+
     if (!direccion || typeof direccion !== "string" || direccion.trim() === "") {
       ctx.response.status = 400;
       ctx.response.body = { success: false, error: "El campo 'direccion' es obligatorio" };
@@ -130,6 +134,7 @@ export const crearMiPropiedad = async (ctx: Context): Promise<void> => {
     }
 
     const estadoRecibido = typeof body.estado === "string" ? body.estado : undefined;
+
     if (estadoRecibido && !esEstadoPropiedad(estadoRecibido)) {
       ctx.response.status = 400;
       ctx.response.body = {
@@ -154,24 +159,33 @@ export const crearMiPropiedad = async (ctx: Context): Promise<void> => {
       inmobiliariaID: null,
     });
 
-    const filasAfectadas = await nuevaPropiedad.InsertarPropiedad();
+    // Insertar la propiedad y obtener su ID
+    const propiedadID = await nuevaPropiedad.InsertarPropiedad();
 
-    if (filasAfectadas > 0) {
+    if (propiedadID > 0) {
       ctx.response.status = 201;
       ctx.response.body = {
         success: true,
         message: "Propiedad publicada correctamente",
+        data: { propiedadID },
       };
     } else {
       ctx.response.status = 409;
-      ctx.response.body = { success: false, error: "No se pudo crear la propiedad" };
+      ctx.response.body = {
+        success: false,
+        error: "No se pudo crear la propiedad",
+      };
     }
   } catch (error) {
     console.error("[agente:crearMiPropiedad]", error);
     ctx.response.status = 500;
-    ctx.response.body = { success: false, error: "Error interno al crear la propiedad" };
+    ctx.response.body = {
+      success: false,
+      error: "Error interno al crear la propiedad",
+    };
   }
 };
+
 
 export const editarMiPropiedad = async (ctx: Context): Promise<void> => {
   try {
@@ -183,6 +197,8 @@ export const editarMiPropiedad = async (ctx: Context): Promise<void> => {
       ctx.response.body = { success: false, error: "ID de propiedad inválido" };
       return;
     }
+
+    
 
     const esPropietario = await propiedadPerteneceAlAgente(propiedadID, agenteID);
     if (!esPropietario) {
