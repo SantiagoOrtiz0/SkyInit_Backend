@@ -11,7 +11,7 @@ import {
   putConstructoraSA
 
 } from "../Controller/superadmincontroller.ts";
-import {    
+import {
     postInmobiliaria,
     putInmobiliaria,
     patchAsignarUsuarios,

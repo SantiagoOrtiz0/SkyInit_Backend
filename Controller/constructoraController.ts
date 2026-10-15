@@ -1,32 +1,49 @@
 import { Constructora } from "../Model/constructoraModel.ts";
 import { Context,RouterContext } from "../Dependencies/dependencias.ts";
+import { buscarPorId } from "../Model/usuarioModel.ts";
 
-export const getConstructoras = async (ctx:Context) => {
-
-    const {response} = ctx
+export const getConstructoras = async (ctx: Context) => {
+    const { response, state } = ctx;
 
     try {
+        const userState = state.user as { sub?: string; rol?: string };
+        const usuarioId = Number(userState?.sub);
 
-        const constructora = new Constructora();
-        const lista = await constructora.SeleccionarConstructoras();
-
-        response.status = 200;
-        response.body = {
-            success:true,
-            data:lista,
-        };
-
-    } catch (error) {
-        console.error("ERROR AL LISTAR CONSTRUCTORAS:" , error);
-        response.status = 500;
-        response.body={
-            success: false,
-            message: "Error al listar constructoras"
+        if (!usuarioId) {
+        response.status = 401;
+        response.body = { success: false, message: "No autorizado" };
+        return;
         }
 
-    };
+        const usuario = await buscarPorId(usuarioId);
+        const inmobiliariaID = Number(
+        (usuario as { inmobiliariaID?: number })?.inmobiliariaID ?? 0,
+        );
 
+        // Si el admin no tiene inmobiliaria, lista vacía (no todas)
+        if (!inmobiliariaID) {
+        response.status = 200;
+        response.body = {
+            success: true,
+            data: [],
+            message: "El administrador no tiene inmobiliaria asignada",
+        };
+            return;
+            }
 
+            const constructora = new Constructora();
+            const lista = await constructora.SeleccionarPorInmobiliaria(inmobiliariaID);
+
+            response.status = 200;
+            response.body = { success: true, data: lista };
+        } catch (error) {
+        console.error("ERROR AL LISTAR CONSTRUCTORAS:", error);
+        response.status = 500;
+        response.body = {
+        success: false,
+        message: "Error al listar constructoras",
+        };
+    }
 };
 
 export const getConstructorasporId = async (ctx:RouterContext<string>) => {
