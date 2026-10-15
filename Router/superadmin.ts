@@ -9,9 +9,10 @@ import {
   getConstructorasSA,
   postConstructoraSA,
   putConstructoraSA
+
 } from "../Controller/superadmincontroller.ts";
 import {
-    getInmobiliarias,
+    
     postInmobiliaria,
     putInmobiliaria,
     patchAsignarUsuarios,
