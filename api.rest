@@ -22,6 +22,14 @@ Content-Type: application/json
     "Password": "Constructora#2026"
 }
 
+###
+POST http://localhost:8001/auth/login
+Content-Type: application/json
+
+{
+  "Correo": "andriu.geova@gmail.com",
+  "Password": "#SkyInit2026"
+}
 ### Logout
 POST http://localhost:8001//auth/logout
 Content-Type: application/json
@@ -300,3 +308,6 @@ Content-Type: application/json
   "inmobiliariaIDs": [1,2],
   "usuario": null
 }
+###
+GET http://localhost:8001/constructoras
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI0Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZjMTAwMDc4LWZjYmQtNDc2MS04MDZmLTdjZTRhM2Q3YzFmOCIsImV4cCI6MTc5MjEwMDIzNn0.oOVTxKuXCYIltp5O_DKkI_hRt39Bt2gtioR_pAm5dKU

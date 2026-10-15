@@ -55,6 +55,7 @@ export async function buscarPorId(id: number) {
         fechaRegistro: usuarios.fechaRegistro,
         aceptoTerminos: usuarios.aceptoTerminos,
         contrasenaHash: usuarios.contrasenaHash,
+        inmobiliariaID: usuarios.inmobiliariaID
     })
     .from(usuarios)
     .innerJoin(roles, eq(usuarios.rolID, roles.rolID))

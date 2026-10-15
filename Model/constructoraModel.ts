@@ -1,6 +1,7 @@
 import { db } from "./conexion.ts";
 import { constructoras, propiedades, proyectos, estadosproyecto, constructorasInmobiliarias, inmobiliarias, usuarios  } from "./schema.ts";
 import {eq, sql, and } from "../Dependencies/dependencias.ts"
+import { logout } from "../Controller/authController.ts";
 
 interface constructoraData{
     constructoraID?: number;
@@ -243,6 +244,7 @@ export class Constructora {
                 descripcion: constructoras.descripcion,
                 correo: constructoras.correo,
                 telefono: constructoras.telefono,
+                logo: constructoras.logo,
             })
             .from(constructoras)
             .innerJoin(
