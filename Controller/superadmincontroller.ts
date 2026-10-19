@@ -1,16 +1,21 @@
-import { Context, RouterContext} from "../Dependencies/dependencias.ts";
+import { Context } from "../Dependencies/dependencias.ts";
 import { bcrypt } from "../Dependencies/dependencias.ts";
 import { db } from "../Model/conexion.ts";
 import { inmobiliarias } from "../Model/schema.ts";
 import { Constructora } from "../Model/constructoraModel.ts";
 import {
-    listarUsuariosAdmin,
-    listarRoles,
-    crearUsuarioAdmin,
-    actualizarUsuarioAdmin,
-    correoExiste,
-    buscarPorId,
-} from "../Model/usuarioModel.ts"; // ajusta imports
+  listarUsuariosAdmin,
+  listarRoles,
+  crearUsuarioAdmin,
+  actualizarUsuarioAdmin,
+  correoExiste,
+  buscarPorId,
+  actualizarPerfil,
+  actualizarFotoPerfil,
+  obtenerPerfilSuperAdmin,
+} from "../Model/usuarioModel.ts";
+import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
+
 
 export const getUsuarios = async (ctx: Context) => {
     try {
@@ -320,4 +325,218 @@ export const putConstructoraSA = async (ctx: Context) => {
       message: "Error al actualizar constructora",
     };
   }
+};
+
+const PASSWORD_REGEX =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+function getSuperAdminID(ctx: Context): number {
+    const sub = (ctx.state as { user?: { sub?: string } }).user?.sub;
+    const id = Number(sub);
+    return Number.isInteger(id) && id > 0 ? id : 0;
+}
+
+export const verPerfilSuperAdmin = async (ctx: Context): Promise<void> => {
+    try {
+        const usuarioID = getSuperAdminID(ctx);
+        if (!usuarioID) {
+            ctx.response.status = 401;
+            ctx.response.body = { success: false, error: "No autorizado" };
+            return;
+        }
+
+        const perfil = await obtenerPerfilSuperAdmin(usuarioID);
+        if (!perfil) {
+            ctx.response.status = 404;
+            ctx.response.body = { success: false, error: "Usuario no encontrado" };
+            return;
+        }
+        if (perfil.rol !== "SuperAdmin") {
+            ctx.response.status = 403;
+            ctx.response.body = { success: false, error: "Acceso denegado" };
+            return;
+        }
+        if (perfil.estadoCuenta !== "Activa") {
+            ctx.response.status = 403;
+            ctx.response.body = { success: false, error: "Cuenta inactiva" };
+            return;
+        }
+
+        const { estadoCuenta: _estado, ...data } = perfil;
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, data };
+    } catch (error) {
+        console.error("[superadmin:verPerfil]", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error interno del servidor" };
+    }
+};
+
+export const actualizarPerfilSuperAdmin = async (ctx: Context): Promise<void> => {
+    try {
+        const usuarioID = getSuperAdminID(ctx);
+        if (!usuarioID) {
+            ctx.response.status = 401;
+            ctx.response.body = { success: false, error: "No autorizado" };
+            return;
+        }
+
+        const actual = await obtenerPerfilSuperAdmin(usuarioID);
+        if (!actual) {
+            ctx.response.status = 404;
+            ctx.response.body = { success: false, error: "Usuario no encontrado" };
+            return;
+        }
+        if (actual.rol !== "SuperAdmin") {
+            ctx.response.status = 403;
+            ctx.response.body = { success: false, error: "Acceso denegado" };
+            return;
+        }
+        if (actual.estadoCuenta !== "Activa") {
+            ctx.response.status = 403;
+            ctx.response.body = { success: false, error: "Cuenta inactiva" };
+            return;
+        }
+
+        let body: Record<string, unknown>;
+        try {
+            body = await ctx.request.body.json();
+        } catch {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "Cuerpo JSON inválido" };
+            return;
+        }
+
+        const nombre = typeof body.Nombre === "string" ? body.Nombre.trim() : "";
+        if (!nombre) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El nombre es obligatorio" };
+            return;
+        }
+        if (nombre.length > 100) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El nombre no puede superar 100 caracteres" };
+            return;
+        }
+
+        const telefonoRaw = typeof body.Telefono === "string" ? body.Telefono.trim() : "";
+        if (telefonoRaw.length > 20) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El teléfono no puede superar 20 caracteres" };
+            return;
+        }
+        const telefono = telefonoRaw === "" ? null : telefonoRaw;
+
+        let contrasenaHash: string | undefined;
+        const passwordNuevo = body.PasswordNuevo;
+
+        if (passwordNuevo !== undefined && passwordNuevo !== null && passwordNuevo !== "") {
+            const passwordActual = body.PasswordActual;
+            if (typeof passwordActual !== "string" || passwordActual.length === 0) {
+                ctx.response.status = 400;
+                ctx.response.body = { success: false, error: "Debes proporcionar tu contraseña actual" };
+                return;
+            }
+            if (typeof passwordNuevo !== "string" || !PASSWORD_REGEX.test(passwordNuevo)) {
+                ctx.response.status = 400;
+                ctx.response.body = {
+                    success: false,
+                    error: "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+                };
+                return;
+            }
+
+            const usuario = await buscarPorId(usuarioID);
+            if (!usuario?.contrasenaHash) {
+                ctx.response.status = 400;
+                ctx.response.body = { success: false, error: "Tu cuenta no tiene contraseña local" };
+                return;
+            }
+
+            const coincide = await bcrypt.compare(passwordActual, usuario.contrasenaHash);
+            if (!coincide) {
+                ctx.response.status = 401;
+                ctx.response.body = { success: false, error: "La contraseña actual es incorrecta" };
+                return;
+            }
+
+            contrasenaHash = await bcrypt.hash(passwordNuevo);
+        }
+
+        // Correo, RolID, InmobiliariaID, EstadoCuenta y FotoPerfil del body se ignoran.
+        await actualizarPerfil(usuarioID, {
+            nombre,
+            telefono,
+            ...(contrasenaHash ? { contrasenaHash } : {}),
+        });
+
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, message: "Perfil actualizado correctamente" };
+    } catch (error) {
+        console.error("[superadmin:actualizarPerfil]", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error interno del servidor" };
+    }
+};
+
+export const subirFotoPerfilSuperAdmin = async (ctx: Context): Promise<void> => {
+    let urlNueva: string | undefined;
+    try {
+        const usuarioID = getSuperAdminID(ctx);
+        if (!usuarioID) {
+            ctx.response.status = 401;
+            ctx.response.body = { success: false, error: "No autorizado" };
+            return;
+        }
+
+        const actual = await obtenerPerfilSuperAdmin(usuarioID);
+        if (!actual || actual.rol !== "SuperAdmin") {
+            ctx.response.status = actual ? 403 : 404;
+            ctx.response.body = {
+                success: false,
+                error: actual ? "Acceso denegado" : "Usuario no encontrado",
+            };
+            return;
+        }
+        if (actual.estadoCuenta !== "Activa") {
+            ctx.response.status = 403;
+            ctx.response.body = { success: false, error: "Cuenta inactiva" };
+            return;
+        }
+
+        const form = await ctx.request.body.formData();
+        const archivo = form.get("foto");
+
+        if (!(archivo instanceof File) || archivo.size === 0) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "Debes adjuntar una imagen en el campo 'foto'" };
+            return;
+        }
+
+        const resultado = await guardarImagen(archivo, "perfiles");
+        if (!resultado.ok || !resultado.url) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: resultado.error ?? "No se pudo guardar la imagen" };
+            return;
+        }
+
+        urlNueva = resultado.url;
+        await actualizarFotoPerfil(usuarioID, resultado.url);
+
+        if (actual.fotoPerfil && actual.fotoPerfil !== resultado.url) {
+            await eliminarImagenDisco(actual.fotoPerfil);
+        }
+
+        ctx.response.status = 200;
+        ctx.response.body = {
+            success: true,
+            message: "Foto de perfil actualizada correctamente",
+            data: { url: resultado.url },
+        };
+    } catch (error) {
+        console.error("[superadmin:subirFotoPerfil]", error);
+        if (urlNueva) await eliminarImagenDisco(urlNueva);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error interno del servidor" };
+    }
 };

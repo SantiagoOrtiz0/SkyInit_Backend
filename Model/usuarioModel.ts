@@ -259,3 +259,70 @@ export async function actualizarUsuarioAdmin(
 
     await db.update(usuarios).set(set).where(eq(usuarios.usuarioID, id));
 }
+
+export interface PerfilAgente {
+    usuarioID: number;
+    nombre: string;
+    correo: string;
+    telefono: string | null;
+    fotoPerfil: string | null;
+    fechaRegistro: Date | string;
+    rol: string;
+    inmobiliariaID: number | null;
+    inmobiliariaNombre: string | null;
+}
+
+/** Perfil del agente. No selecciona ContraseñaHash ni GoogleID. */
+export async function obtenerPerfilAgente(agenteID: number): Promise<PerfilAgente | null> {
+    const filas = await db
+        .select({
+            usuarioID: usuarios.usuarioID,
+            nombre: usuarios.nombre,
+            correo: usuarios.correo,
+            telefono: usuarios.telefono,
+            fotoPerfil: usuarios.fotoPerfil,
+            fechaRegistro: usuarios.fechaRegistro,
+            rol: roles.nombreRol,
+            inmobiliariaID: usuarios.inmobiliariaID,
+            inmobiliariaNombre: inmobiliarias.nombre,
+        })
+        .from(usuarios)
+        .innerJoin(roles, eq(usuarios.rolID, roles.rolID))
+        .leftJoin(inmobiliarias, eq(usuarios.inmobiliariaID, inmobiliarias.inmobiliariaID))
+        .where(eq(usuarios.usuarioID, agenteID))
+        .limit(1);
+
+    return filas[0] ?? null;
+}
+
+export interface PerfilSuperAdmin {
+    usuarioID: number;
+    nombre: string;
+    correo: string;
+    telefono: string | null;
+    fotoPerfil: string | null;
+    fechaRegistro: Date | string;
+    rol: string;
+    estadoCuenta: string;
+}
+
+/** Perfil propio. No selecciona ContraseñaHash, GoogleID ni InmobiliariaID. */
+export async function obtenerPerfilSuperAdmin(usuarioID: number): Promise<PerfilSuperAdmin | null> {
+    const filas = await db
+        .select({
+            usuarioID: usuarios.usuarioID,
+            nombre: usuarios.nombre,
+            correo: usuarios.correo,
+            telefono: usuarios.telefono,
+            fotoPerfil: usuarios.fotoPerfil,
+            fechaRegistro: usuarios.fechaRegistro,
+            rol: roles.nombreRol,
+            estadoCuenta: usuarios.estadoCuenta,
+        })
+        .from(usuarios)
+        .innerJoin(roles, eq(usuarios.rolID, roles.rolID))
+        .where(eq(usuarios.usuarioID, usuarioID))
+        .limit(1);
+
+    return filas[0] ?? null;
+}
