@@ -266,6 +266,7 @@ public async ActualizarProyecto(): Promise<number> {
     if (proyecto.porcentajeAvance !== undefined) datos.porcentajeAvance = proyecto.porcentajeAvance;
     if (proyecto.fechaInicio !== undefined)      datos.fechaInicio = toDate(proyecto.fechaInicio);
     if (proyecto.fechaFin !== undefined)         datos.fechaFin = toDate(proyecto.fechaFin);
+    if (proyecto.constructoraID !== undefined)   datos.constructoraID = proyecto.constructoraID;
     if (proyecto.descripcion !== undefined)      datos.descripcion = proyecto.descripcion;
     if (proyecto.ubicacion !== undefined)        datos.ubicacion = proyecto.ubicacion;
     if (proyecto.inmobiliariaID !== undefined)   datos.inmobiliariaID = proyecto.inmobiliariaID;
