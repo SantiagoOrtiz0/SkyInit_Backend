@@ -18,8 +18,8 @@ POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-    "Correo": "constructorajumper@gmail.com",
-    "Password": "Constructora#2026"
+    "Correo": "skyinit2026@gmail.com",
+    "Password": "#Skyinit2026"
 }
 
 ###
@@ -27,7 +27,7 @@ POST http://localhost:8001/auth/login
 Content-Type: application/json
 
 {
-  "Correo": "andriu.geova@gmail.com",
+  "Correo": "skyinit2026@gmail.com",
   "Password": "#SkyInit2026"
 }
 ### Logout
@@ -311,3 +311,11 @@ Content-Type: application/json
 ###
 GET http://localhost:8001/constructoras
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI0Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZjMTAwMDc4LWZjYmQtNDc2MS04MDZmLTdjZTRhM2Q3YzFmOCIsImV4cCI6MTc5MjEwMDIzNn0.oOVTxKuXCYIltp5O_DKkI_hRt39Bt2gtioR_pAm5dKU
+
+###
+GET http://localhost:8001/agente/dashboard
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI3Iiwicm9sIjoiQWdlbnRlIiwianRpIjoiY2U3OWMwY2QtZWVhYy00MDVlLTlmNDctOGFhNjNkNDUzN2RiIiwiZXhwIjoxNzkyNDUwMzUxfQ.VxQAJzEN_lAUqhhHP9HlLmeiKJcdUNePiT50RqnjkbcD
+
+###
+GET http://localhost:8001/superadmin/dashboard
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiU3VwZXJBZG1pbiIsImp0aSI6IjFjOTZlOTMzLTE2ZmEtNDIyZS1hNjYzLTEzYWVlM2RiYTlkMSIsImV4cCI6MTc5MjQ1MTY2Nn0.lsisDZ_vDSKuNwONQs1A9a9bIuozKiPCEIlfzJJ4cTY
