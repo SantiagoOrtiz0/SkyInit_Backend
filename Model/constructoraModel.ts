@@ -255,28 +255,32 @@ export class Constructora {
         }
 
     public async SeleccionarConstructorasPublicas() {
-        return await db
-            .select({
-            constructoraID: constructoras.constructoraID,
-            nombre: constructoras.nombre,
-            descripcion: constructoras.descripcion,
-            ciudad: constructoras.ciudad,
-            contacto: constructoras.contacto,
-            telefono: constructoras.telefono,
-            correo: constructoras.correo,
-            logo: constructoras.logo,
-            estado: constructoras.estado,
-            inmobiliariaID: constructorasInmobiliarias.constructoraID,
-            inmobiliariaNombre: inmobiliarias.nombre,
-            inmobiliariaCiudad: inmobiliarias.ciudad,
-            })
-            .from(constructoras)
-            .leftJoin(
+    return await db
+        .select({
+        constructoraID: constructoras.constructoraID,
+        nombre: constructoras.nombre,
+        descripcion: constructoras.descripcion,
+        ciudad: constructoras.ciudad,
+        contacto: constructoras.contacto,
+        telefono: constructoras.telefono,
+        correo: constructoras.correo,
+        logo: constructoras.logo,
+        estado: constructoras.estado,
+        inmobiliariaID: constructorasInmobiliarias.inmobiliariaID,
+        inmobiliariaNombre: inmobiliarias.nombre,
+        inmobiliariaCiudad: inmobiliarias.ciudad,
+        })
+        .from(constructoras)
+        .leftJoin(
+            constructorasInmobiliarias,
+            eq(constructoras.constructoraID, constructorasInmobiliarias.constructoraID),
+        )
+        .leftJoin(
             inmobiliarias,
-            eq(constructorasInmobiliarias.constructoraID, inmobiliarias.inmobiliariaID),
-            )
-            .where(eq(constructoras.estado, "Activo"));
-    }
+            eq(constructorasInmobiliarias.inmobiliariaID, inmobiliarias.inmobiliariaID),
+        )
+        .where(eq(constructoras.estado, "Activo"));
+}
 
     public async SeleccionarInmobiliarias() {
         return await db
