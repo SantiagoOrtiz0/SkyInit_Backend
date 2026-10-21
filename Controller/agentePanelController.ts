@@ -1,11 +1,10 @@
-/**
- * agentePanelController.ts
- * Controladores del panel del agente — sección Propiedades.
- *
- * Cada handler solo puede ver/modificar las propiedades donde
- * propiedades.AgenteID = agenteID del token (inyectado por
- * agenteScopeMiddleware).
- */
+import { bcrypt } from "../Dependencies/dependencias.ts";
+import {
+    buscarPorId,
+    actualizarPerfil,
+    actualizarFotoPerfil,
+    obtenerPerfilAgente,
+} from "../Model/usuarioModel.ts";
 import type { Context } from "../Dependencies/dependencias.ts";
 import { Propiedad } from "../Model/propiedadesModel.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
@@ -635,5 +634,161 @@ export const eliminarImagenMiProyecto = async (ctx: Context): Promise<void> => {
         console.error("[agente:eliminarImagenMiProyecto]", error);
         ctx.response.status = 500;
         ctx.response.body = { success: false, error: "Error al eliminar la imagen" };
+    }
+};
+
+
+const PASSWORD_REGEX =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+
+export const verMiPerfil = async (ctx: Context): Promise<void> => {
+    try {
+        const agenteID = getAgenteID(ctx);
+        const perfil = await obtenerPerfilAgente(agenteID);
+
+        if (!perfil) {
+            ctx.response.status = 404;
+            ctx.response.body = { success: false, error: "Usuario no encontrado" };
+            return;
+        }
+
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, data: perfil };
+    } catch (error) {
+        console.error("[agente:verMiPerfil]", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error interno del servidor" };
+    }
+};
+
+export const actualizarMiPerfil = async (ctx: Context): Promise<void> => {
+    try {
+        const agenteID = getAgenteID(ctx);
+
+        let body: Record<string, unknown>;
+        try {
+            body = await ctx.request.body.json();
+        } catch {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "Cuerpo JSON inválido" };
+            return;
+        }
+
+        const nombre = typeof body.Nombre === "string" ? body.Nombre.trim() : "";
+        if (!nombre) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El nombre es obligatorio" };
+            return;
+        }
+        if (nombre.length > 100) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El nombre no puede superar 100 caracteres" };
+            return;
+        }
+
+        const telefonoRaw = typeof body.Telefono === "string" ? body.Telefono.trim() : "";
+        if (telefonoRaw.length > 20) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "El teléfono no puede superar 20 caracteres" };
+            return;
+        }
+        const telefono = telefonoRaw === "" ? null : telefonoRaw;
+
+        let contrasenaHash: string | undefined;
+        const passwordNuevo = body.PasswordNuevo;
+
+        if (passwordNuevo !== undefined && passwordNuevo !== null && passwordNuevo !== "") {
+            const passwordActual = body.PasswordActual;
+            if (typeof passwordActual !== "string" || passwordActual.length === 0) {
+                ctx.response.status = 400;
+                ctx.response.body = { success: false, error: "Debes proporcionar tu contraseña actual" };
+                return;
+            }
+            if (typeof passwordNuevo !== "string" || !PASSWORD_REGEX.test(passwordNuevo)) {
+                ctx.response.status = 400;
+                ctx.response.body = {
+                    success: false,
+                    error: "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial",
+                };
+                return;
+            }
+
+            const usuario = await buscarPorId(agenteID);
+            if (!usuario) {
+                ctx.response.status = 404;
+                ctx.response.body = { success: false, error: "Usuario no encontrado" };
+                return;
+            }
+            if (!usuario.contrasenaHash) {
+                ctx.response.status = 400;
+                ctx.response.body = { success: false, error: "Tu cuenta no tiene contraseña local" };
+                return;
+            }
+
+            const coincide = await bcrypt.compare(passwordActual, usuario.contrasenaHash);
+            if (!coincide) {
+                ctx.response.status = 401;
+                ctx.response.body = { success: false, error: "La contraseña actual es incorrecta" };
+                return;
+            }
+
+            contrasenaHash = await bcrypt.hash(passwordNuevo);
+        }
+
+        await actualizarPerfil(agenteID, {
+            nombre,
+            telefono,
+            ...(contrasenaHash ? { contrasenaHash } : {}),
+        });
+
+        ctx.response.status = 200;
+        ctx.response.body = { success: true, message: "Perfil actualizado correctamente" };
+    } catch (error) {
+        console.error("[agente:actualizarMiPerfil]", error);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error interno del servidor" };
+    }
+};
+
+export const subirFotoMiPerfil = async (ctx: Context): Promise<void> => {
+    let urlNueva: string | undefined;
+    try {
+        const agenteID = getAgenteID(ctx);
+        const form = await ctx.request.body.formData();
+        const archivo = form.get("foto");
+
+        if (!(archivo instanceof File) || archivo.size === 0) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: "Debes adjuntar una imagen en el campo 'foto'" };
+            return;
+        }
+
+        const resultado = await guardarImagen(archivo, "perfiles");
+        if (!resultado.ok || !resultado.url) {
+            ctx.response.status = 400;
+            ctx.response.body = { success: false, error: resultado.error ?? "No se pudo guardar la imagen" };
+            return;
+        }
+
+        urlNueva = resultado.url;
+        const anterior = (await buscarPorId(agenteID))?.fotoPerfil ?? null;
+
+        await actualizarFotoPerfil(agenteID, resultado.url);
+
+        if (anterior && anterior !== resultado.url) {
+            await eliminarImagenDisco(anterior);
+        }
+
+        ctx.response.status = 200;
+        ctx.response.body = {
+            success: true,
+            message: "Foto de perfil actualizada correctamente",
+            data: { url: resultado.url },
+        };
+    } catch (error) {
+        console.error("[agente:subirFotoMiPerfil]", error);
+        if (urlNueva) await eliminarImagenDisco(urlNueva);
+        ctx.response.status = 500;
+        ctx.response.body = { success: false, error: "Error interno del servidor" };
     }
 };
