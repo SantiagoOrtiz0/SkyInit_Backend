@@ -197,7 +197,7 @@ export const listarProyectos = async (ctx:Context) => {
                 constructoraID: idConstructora,
                 descripcion: descripcion ?? null,
                 ubicacion: ubicacion ?? null,
-                inmobiliariaID: idInmobiliaria,
+                inmobiliariaID: idInmobiliaria ?? undefined,
             },
             Number(id)
         );
@@ -344,5 +344,37 @@ export const listarProyectos = async (ctx:Context) => {
             await eliminarImagenDisco(urlGuardada);
             ctx.response.status = 500;
             ctx.response.body = {error: "Error al subir la imagen del proyecto"};
+        }
+    };
+
+
+    // Elimina una imagen de un proyecto (solo administrador)
+    export const eliminarImagenProyecto = async (ctx:any) => {
+        try {
+            const idProyecto = Number(ctx.params.id);
+            const idImagen = Number(ctx.params.imagenId);
+
+            if (Number.isNaN(idProyecto) || Number.isNaN(idImagen)) {
+                ctx.response.status = 400;
+                ctx.response.body = {error: "ID invalido"};
+                return;
+            }
+
+            const modeloProyecto = new Proyecto(null, idProyecto);
+            const url = await modeloProyecto.EliminarImagen(idImagen);
+
+            if (url === null) {
+                ctx.response.status = 404;
+                ctx.response.body = {error: "Imagen no encontrada"};
+                return;
+            }
+
+            await eliminarImagenDisco(url);
+
+            ctx.response.status = 200;
+            ctx.response.body = {message: "Imagen eliminada correctamente"};
+        } catch (error) {
+            ctx.response.status = 500;
+            ctx.response.body = {error: "Error al eliminar la imagen del proyecto"};
         }
     };
