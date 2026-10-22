@@ -1,5 +1,5 @@
 import { Router } from "../Dependencies/dependencias.ts";
-import { registro, login, perfil, logout,olvidePassword,restablecerPassword, subirFotoPerfil } from "../Controller/authController.ts";
+import { registro, login, perfil, logout,olvidePassword,restablecerPassword, subirFotoPerfil, verificarCodigo } from "../Controller/authController.ts";
 import { authMiddleware } from "../Middlewares/validarJWT.ts";
 
 const authRouter = new Router();
@@ -11,6 +11,7 @@ authRouter.post("/auth/logout", logout);
 
 authRouter.post("/auth/perfil/foto", authMiddleware, subirFotoPerfil);
 authRouter.post("/auth/olvide-password", olvidePassword);
+authRouter.post("/auth/verificar-codigo", verificarCodigo);
 authRouter.post("/auth/restablecer-password", restablecerPassword);
 
 export default authRouter;
