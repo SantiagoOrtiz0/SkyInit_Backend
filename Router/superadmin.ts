@@ -33,7 +33,11 @@ superadminRouter
   .get("/superadmin/constructoras", ...proteger, getConstructorasSA)
   .post("/superadmin/constructoras", ...proteger, postConstructoraSA)
   .put("/superadmin/constructoras/:id", ...proteger, putConstructoraSA)
-  .patch("/superadmin/inmobiliarias/:id/asignar", ...proteger, patchAsignarUsuarios)
+  .patch(
+    "/superadmin/inmobiliarias/:id/asignar",
+    ...proteger,
+    patchAsignarUsuarios,
+  )
   .get("/superadmin/perfil", ...proteger, verPerfilSuperAdmin)
   .put("/superadmin/perfil", ...proteger, actualizarPerfilSuperAdmin)
   .post("/superadmin/perfil/foto", ...proteger, subirFotoPerfilSuperAdmin);

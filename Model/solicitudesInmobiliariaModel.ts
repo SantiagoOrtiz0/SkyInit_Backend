@@ -52,12 +52,14 @@ const LIMIT_MAX = 100;
 export async function listarSolicitudes(
   f: ListarSolicitudesFiltros,
 ): Promise<ListarSolicitudesResultado> {
-  const page = Number.isInteger(f.page) && (f.page as number) > 0
-    ? (f.page as number)
-    : PAGE_DEFAULT;
-  const limit = Number.isInteger(f.limit) && (f.limit as number) > 0
-    ? Math.min(f.limit as number, LIMIT_MAX)
-    : LIMIT_DEFAULT;
+  const page =
+    Number.isInteger(f.page) && (f.page as number) > 0
+      ? (f.page as number)
+      : PAGE_DEFAULT;
+  const limit =
+    Number.isInteger(f.limit) && (f.limit as number) > 0
+      ? Math.min(f.limit as number, LIMIT_MAX)
+      : LIMIT_DEFAULT;
   const offset = (page - 1) * limit;
 
   const conds = [eq(serviciossolicitados.inmobiliariaID, f.inmobiliariaId)];
@@ -155,10 +157,12 @@ export async function actualizarEstadoSolicitud(
       serviciosmantenimiento,
       eq(serviciosmantenimiento.servicioID, serviciossolicitados.servicioID),
     )
-    .where(and(
-      eq(serviciossolicitados.solicitudID, solicitudId),
-      eq(serviciossolicitados.inmobiliariaID, inmobiliariaId),
-    ))
+    .where(
+      and(
+        eq(serviciossolicitados.solicitudID, solicitudId),
+        eq(serviciossolicitados.inmobiliariaID, inmobiliariaId),
+      ),
+    )
     .limit(1);
 
   const actual = filas[0];
@@ -185,10 +189,12 @@ export async function actualizarEstadoSolicitud(
   await db
     .update(serviciossolicitados)
     .set(setData)
-    .where(and(
-      eq(serviciossolicitados.solicitudID, solicitudId),
-      eq(serviciossolicitados.inmobiliariaID, inmobiliariaId),
-    ));
+    .where(
+      and(
+        eq(serviciossolicitados.solicitudID, solicitudId),
+        eq(serviciossolicitados.inmobiliariaID, inmobiliariaId),
+      ),
+    );
 
   return {
     SolicitudID: actual.SolicitudID,
@@ -197,7 +203,9 @@ export async function actualizarEstadoSolicitud(
     Servicio: actual.Servicio,
     Estado: estado.descripcion,
     Fecha: actual.Fecha,
-    FechaFinalizacion: esFinalizado ? setData.fechaFinalizacion ?? null : null,
+    FechaFinalizacion: esFinalizado
+      ? (setData.fechaFinalizacion ?? null)
+      : null,
     Notas: notas !== undefined ? notas : actual.Notas,
   };
 }
@@ -208,10 +216,12 @@ export async function eliminarSolicitud(
 ): Promise<boolean> {
   const result = await db
     .delete(serviciossolicitados)
-    .where(and(
-      eq(serviciossolicitados.solicitudID, solicitudId),
-      eq(serviciossolicitados.inmobiliariaID, inmobiliariaId),
-    ));
+    .where(
+      and(
+        eq(serviciossolicitados.solicitudID, solicitudId),
+        eq(serviciossolicitados.inmobiliariaID, inmobiliariaId),
+      ),
+    );
 
   // Drizzle MySQL: rowsAffected según driver
   const affected = (result as { rowsAffected?: number })?.rowsAffected ?? 0;
