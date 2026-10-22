@@ -1,9 +1,8 @@
 import { Router } from "../Dependencies/dependencias.ts";
-import { listarProyectos, listarPorConstructora, consultarProyecto, listarSimilares, listarAvances, crearProyecto, editarProyecto, registrarAvance, eliminarProyecto, subirImagenProyecto, eliminarImagenProyecto } from "../Controller/proyectosController.ts";
+import { listarProyectos, listarPorConstructora, consultarProyecto, listarSimilares, listarAvances, crearProyecto, editarProyecto, registrarAvance, eliminarProyecto, subirImagenProyecto, eliminarImagenProyecto, listarProyectosInmobiliaria } from "../Controller/proyectosController.ts";
 import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
 import { constructoraScopeMiddleware } from "../Middlewares/constructoraScope.ts";
 import { obtenerInmobiliariaScope } from "../Middlewares/inmobiliariasScope.ts";
-import { proyectos } from "../Model/schema.ts";
 
 // Middleware puente que inyecta inmobiliariaID en ctx.state
 const inyectarScope = async (ctx: any, next: any) => {
@@ -20,6 +19,10 @@ proyectosRouter.get("/proyectos/constructora/:constructoraID", listarPorConstruc
 proyectosRouter.get("/proyectos/:id", consultarProyecto);
 proyectosRouter.get("/proyectos/:id/similares", listarSimilares);
 proyectosRouter.get("/proyectos/:id/avances", listarAvances);
+
+// Panel Inmobiliaria - solo proyectos de la inmobiliaria del admin logueado
+proyectosRouter.get("/proyectos/inmobiliaria/mis-proyectos", authMiddleware, rolMiddleware("Administrador"), listarProyectosInmobiliaria);
+
 
 //Rutas privadas (Constructora y administrador)
 proyectosRouter.post("/proyectos", authMiddleware, rolMiddleware("Administrador"), inyectarScope, crearProyecto);
