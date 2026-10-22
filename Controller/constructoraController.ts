@@ -32,10 +32,27 @@ export const getConstructoras = async (ctx: Context) => {
             }
 
             const constructora = new Constructora();
+
+
             const lista = await constructora.SeleccionarPorInmobiliaria(inmobiliariaID);
 
+            // No mostrar inactivas en el panel admin (salvo ?estado=Inactivo)
+            const estadoParam = ctx.request.url.searchParams.get("estado");
+            let data = lista;
+
+            if (estadoParam) {
+            data = lista.filter(
+                (c) => String(c.estado || "") === estadoParam,
+            );
+            } else {
+            data = lista.filter(
+                (c) => String(c.estado || "").toLowerCase() !== "inactivo",
+            );
+            }
+
             response.status = 200;
-            response.body = { success: true, data: lista };
+            response.body = { success: true, data };
+            
         } catch (error) {
         console.error("ERROR AL LISTAR CONSTRUCTORAS:", error);
         response.status = 500;

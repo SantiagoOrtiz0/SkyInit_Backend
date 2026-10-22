@@ -5,7 +5,7 @@ import { Propiedad } from "../Model/propiedadesModel.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import { bcrypt } from "../Dependencies/dependencias.ts";
 import { buscarPorId, actualizarPerfil } from "../Model/usuarioModel.ts";
-import { inmobiliarias } from "../Model/schema.ts";
+import { notificarAdminsAvance } from "../services/emailServices.ts";
 
 // Helper local: castea el state con el que dejamos constructoraID
 type CtxConstructora = Context & { state: { constructoraID: number } };
@@ -457,6 +457,22 @@ export const postAvanceProyecto = async (ctx: RouterContext<"/panel/constructora
 
         response.status = 201;
         response.body = { success: true, message: "Avance registrado correctamente", data: { avanceID } };
+
+        try {
+            await notificarAdminsAvance({
+                constructoraID: state.constructoraID,
+                proyectoID: id, // o el id del proyecto que uses
+                porcentaje: Number(porcentaje),
+                nota: nota ?? null,
+            });
+            } catch (e) {
+            // No fallar el avance si el correo falla
+            console.error("Notificación de avance:", e);
+        }
+
+        response.status = 200;
+        response.body = { success: true, message: "Avance registrado" };
+
     } catch (error) {
         console.error("ERROR AL REGISTRAR AVANCE:", error);
         response.status = 500;

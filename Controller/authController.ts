@@ -6,6 +6,8 @@ import { crearTokenReset,buscarTokenReset,borrarTokenReset,actualizarPassword } 
 import { enviarCorreoRecuperarPassword, enviarCorreoBienvenida } from "../services/emailServices.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import {  actualizarFotoPerfil } from "../Model/usuarioModel.ts";
+import {buscarCodigoReset,generarCodigo6,} from "../Model/passwordResetModel.ts";
+
 const FRONT_URL = Deno.env.get("FRONT_URL") ?? "http://localhost:4321";
 
 
@@ -195,107 +197,154 @@ export async function logout(ctx: Context) {
 
 // --- OLVIDÉ CONTRASEÑA ---
 export async function olvidePassword(ctx: Context) {
-    try {
-        const body = await ctx.request.body.json();
-        const { Correo } = body;
+  try {
+    const body = await ctx.request.body.json();
+    const { Correo } = body;
 
-        if (!Correo) {
-        ctx.response.status = 400;
-        ctx.response.body = { error: "El correo es obligatorio" };
-        return;
-        }
-
-        const mensajeOk =
-        "Si el correo está registrado, enviaremos instrucciones para restablecer la contraseña";
-
-        const usuario = await buscarPorCorreo(Correo);
-
-        if (!usuario) {
-        ctx.response.status = 200;
-        ctx.response.body = { mensaje: mensajeOk };
-        return;
-        }
-
-        const token = crypto.randomUUID();
-        const expirationDate = new Date(Date.now() + 60 * 60 * 1000);
-
-        await crearTokenReset(usuario.usuarioID, token, expirationDate);
-
-        const enlace = `${FRONT_URL}/restablecer-password?token=${token}`;
-
-        try {
-        await enviarCorreoRecuperarPassword(
-            usuario.correo,
-            usuario.nombre,
-            enlace,
-        );
-        } catch (mailErr) {
-        console.error("Error enviando correo de recuperación:", mailErr);
-        ctx.response.status = 500;
-        ctx.response.body = { error: "No se pudo enviar el correo" };
-        return;
-        }
-
-        ctx.response.status = 200;
-        ctx.response.body = { mensaje: mensajeOk };
-    } catch (error) {
-        console.error("Error en olvidePassword:", error);
-        ctx.response.status = 500;
-        ctx.response.body = { error: "Error interno del servidor" };
+    if (!Correo) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "El correo es obligatorio" };
+      return;
     }
+
+    const mensajeOk =
+      "Si el correo está registrado, enviaremos un código de verificación";
+
+    const usuario = await buscarPorCorreo(Correo);
+    if (!usuario) {
+      ctx.response.status = 200;
+      ctx.response.body = { mensaje: mensajeOk };
+      return;
+    }
+
+    const codigo = generarCodigo6();
+    // 15 minutos
+    const expirationDate = new Date(Date.now() + 15 * 60 * 1000);
+    await crearTokenReset(usuario.usuarioID, codigo, expirationDate);
+
+    try {
+      await enviarCorreoRecuperarPassword(
+        usuario.correo,
+        usuario.nombre,
+        codigo, // ya no es un enlace
+      );
+    } catch (mailErr) {
+      console.error("Error enviando correo de recuperación:", mailErr);
+      ctx.response.status = 500;
+      ctx.response.body = { error: "No se pudo enviar el correo" };
+      return;
+    }
+
+    ctx.response.status = 200;
+    ctx.response.body = { mensaje: mensajeOk };
+  } catch (error) {
+    console.error("Error en olvidePassword:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Error interno del servidor" };
+  }
+}
+
+export async function verificarCodigo(ctx: Context) {
+  try {
+    const body = await ctx.request.body.json();
+    const { Correo, Codigo } = body;
+
+    if (!Correo || !Codigo) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "Correo y código son obligatorios" };
+      return;
+    }
+
+    const codigoLimpio = String(Codigo).trim().replace(/\s/g, "");
+    if (!/^\d{6}$/.test(codigoLimpio)) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "El código debe ser de 6 dígitos" };
+      return;
+    }
+
+    const usuario = await buscarPorCorreo(Correo);
+    if (!usuario) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "Código inválido o expirado" };
+      return;
+    }
+
+    const fila = await buscarCodigoReset(usuario.usuarioID, codigoLimpio);
+    if (!fila) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "Código inválido o expirado" };
+      return;
+    }
+
+    // Invalidar el código y crear token UUID para la página de nueva contraseña
+    await borrarTokenReset(codigoLimpio);
+    const token = crypto.randomUUID();
+    const expirationDate = new Date(Date.now() + 15 * 60 * 1000);
+    await crearTokenReset(usuario.usuarioID, token, expirationDate);
+
+    ctx.response.status = 200;
+    ctx.response.body = {
+      mensaje: "Código verificado",
+      token,
+    };
+  } catch (error) {
+    console.error("Error en verificarCodigo:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Error interno del servidor" };
+  }
 }
 
 export async function restablecerPassword(ctx: Context) {
-    try {
-        const body = await ctx.request.body.json();
-        const { Token, Password, Confirmar } = body;
-        const regexPassword =
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
+  try {
+    const body = await ctx.request.body.json();
+    const { Token, Password, Confirmar } = body;
+    const regexPassword =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
-        if (!Token || !Password || !Confirmar) {
-        ctx.response.status = 400;
-        ctx.response.body = {
-            error: "Token, Password y Confirmar son obligatorios",
-        };
-        return;
-        }
-
-        if (Password !== Confirmar) {
-        ctx.response.status = 400;
-        ctx.response.body = { error: "Las contraseñas no coinciden" };
-        return;
-        }
-
-        if (!regexPassword.test(Password)) {
-        ctx.response.status = 400;
-        ctx.response.body = {
-            error:
-            "La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial",
-        };
-        return;
-        }
-
-        const fila = await buscarTokenReset(Token);
-        if (!fila) {
-        ctx.response.status = 400;
-        ctx.response.body = { error: "El enlace no es válido o ya expiró" };
-        return;
-        }
-
-        const hash = await bcrypt.hash(Password);
-        await actualizarPassword(fila.userId, hash);
-        await borrarTokenReset(Token);
-
-        ctx.response.status = 200;
-        ctx.response.body = {
-        mensaje:
-            "Contraseña actualizada correctamente. Ya puedes iniciar sesión.",
-        };
-    } catch (error) {
-        console.error("Error en restablecerPassword:", error);
-        ctx.response.status = 500;
-        ctx.response.body = { error: "Error interno del servidor" };
+    if (!Token || !Password || !Confirmar) {
+      ctx.response.status = 400;
+      ctx.response.body = {
+        error: "Token, Password y Confirmar son obligatorios",
+      };
+      return;
     }
+
+    if (Password !== Confirmar) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "Las contraseñas no coinciden" };
+      return;
+    }
+
+    if (!regexPassword.test(Password)) {
+      ctx.response.status = 400;
+      ctx.response.body = {
+        error:
+          "La contraseña debe tener mínimo 8 caracteres, mayúscula, minúscula, número y carácter especial",
+      };
+      return;
+    }
+
+    const fila = await buscarTokenReset(Token);
+    if (!fila) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: "El enlace no es válido o ya expiró" };
+      return;
+    }
+
+    const hash = await bcrypt.hash(Password);
+    await actualizarPassword(fila.userId, hash);
+    await borrarTokenReset(Token);
+
+    ctx.response.status = 200;
+    ctx.response.body = {
+      mensaje:
+        "Contraseña actualizada correctamente. Ya puedes iniciar sesión.",
+    };
+  } catch (error) {
+    console.error("Error en restablecerPassword:", error);
+    ctx.response.status = 500;
+    ctx.response.body = { error: "Error interno del servidor" };
+  }
 }
 export async function subirFotoPerfil(ctx: Context) {
   try {
