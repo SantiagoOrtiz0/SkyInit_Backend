@@ -1,6 +1,6 @@
 import { Router } from "../Dependencies/dependencias.ts";
 import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
-import { listarPropiedades,listarDestacadas, listarPorAgente, consultarPropiedad, consultarPropiedadDetalle , listarSimilares, crearPropiedad, editarPropiedad, eliminarPropiedad, postImagenPropiedad, deleteImagenPropiedad, listarAgentes, ListarPropiedadesAdmin } from "../Controller/propiedadesController.ts";
+import { listarPropiedades,listarDestacadas, listarPorAgente, consultarPropiedad, consultarPropiedadDetalle , listarSimilares, crearPropiedad, editarPropiedad, eliminarPropiedad, postImagenPropiedad, deleteImagenPropiedad, listarAgentes, ListarPropiedadesAdmin, listarPropiedadesInmobiliaria } from "../Controller/propiedadesController.ts";
 const propiedadesRouter = new Router();
 
 // Rutas publicas 
@@ -30,4 +30,6 @@ propiedadesRouter.post("/api/propiedades/:id/imagenes", authMiddleware, rolMiddl
 propiedadesRouter.delete("/api/propiedades/:id/imagenes/:imagenId", authMiddleware,rolMiddleware("Agente","Constructora","Administrador"), deleteImagenPropiedad);
 
 
+// Panel inmobiliaria - solo propiedades de la inmobiliaria del admin logueado
+propiedadesRouter.get("/api/propiedades/inmobiliaria/mis-propiedades", authMiddleware, rolMiddleware("Administrador"), listarPropiedadesInmobiliaria);
 export default propiedadesRouter;

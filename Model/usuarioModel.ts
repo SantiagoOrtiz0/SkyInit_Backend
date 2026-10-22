@@ -1,5 +1,5 @@
 import { db } from "./conexion.ts";
-import { usuarios, roles, favoritos, propiedades, imagenespropiedad, serviciossolicitados, serviciosmantenimiento, inmobiliarias } from "./schema.ts";
+import { usuarios, roles, favoritos, propiedades, imagenespropiedad, serviciossolicitados, serviciosmantenimiento, inmobiliarias, estadosreparacion } from "./schema.ts";
 import { eq, sql } from "../Dependencies/dependencias.ts";
 
 export interface UsuarioCreate {
@@ -182,11 +182,16 @@ export async function obtenerSolicitudesUsuario(usuarioId: number) {
             notas:              serviciossolicitados.notas,
             fechaSolicitud:     serviciossolicitados.fechaSolicitud,
             estadoReparacionID: serviciossolicitados.estadoReparacionID,
+            estado:             estadosreparacion.descripcion,
         })
         .from(serviciossolicitados)
         .innerJoin(
             serviciosmantenimiento,
             eq(serviciossolicitados.servicioID, serviciosmantenimiento.servicioID)
+        )
+        .leftJoin(
+            estadosreparacion,
+            eq(serviciossolicitados.estadoReparacionID, estadosreparacion.estadoReparacionID)
         )
         .where(eq(serviciossolicitados.usuarioID, usuarioId));
 

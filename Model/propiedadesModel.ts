@@ -1,20 +1,20 @@
 import {
-  eq,
   and,
-  like,
-  gte,
-  lte,
-  desc,
   asc,
+  desc,
+  eq,
+  gte,
   inArray,
+  like,
+  lte,
 } from "../Dependencies/dependencias.ts";
 import { db } from "./conexion.ts";
 import {
+  constructoras,
+  imagenespropiedad,
   propiedades,
   tiposoperacion,
-  constructoras,
   usuarios,
-  imagenespropiedad,
 } from "./schema.ts";
 
 interface PropiedadData {
@@ -58,25 +58,24 @@ export class Propiedad {
   }
 
   public async SeleccionarTodasAdmin() {
-    const filas = await db
-      .select({
-        propiedadID: propiedades.propiedadID,
-        titulo: propiedades.titulo,
-        descripcion: propiedades.descripcion,
-        precio: propiedades.precio,
-        tipoOperacionID: propiedades.tipoOperacionID,
-        habitaciones: propiedades.habitaciones,
-        direccion: propiedades.direccion,
-        ciudad: propiedades.ciudad,
-        estado: propiedades.estado,
-        destacada: propiedades.destacada,
-        fechaPublicacion: propiedades.fechaPublicacion,
-        tipoOperacion: tiposoperacion.descripcion,
-        agenteID: propiedades.agenteID,
-        agenteNombre: usuarios.nombre,
-        constructoraID: propiedades.constructoraID,
-        constructoraNombre: constructoras.nombre,
-      })
+    const filas = await db.select({
+      propiedadID: propiedades.propiedadID,
+      titulo: propiedades.titulo,
+      descripcion: propiedades.descripcion,
+      precio: propiedades.precio,
+      tipoOperacionID: propiedades.tipoOperacionID,
+      habitaciones: propiedades.habitaciones,
+      direccion: propiedades.direccion,
+      ciudad: propiedades.ciudad,
+      estado: propiedades.estado,
+      destacada: propiedades.destacada,
+      fechaPublicacion: propiedades.fechaPublicacion,
+      tipoOperacion: tiposoperacion.descripcion,
+      agenteID: propiedades.agenteID,
+      agenteNombre: usuarios.nombre,
+      constructoraID: propiedades.constructoraID,
+      constructoraNombre: constructoras.nombre,
+    })
       .from(propiedades)
       .leftJoin(
         tiposoperacion,
@@ -93,24 +92,23 @@ export class Propiedad {
   }
 
   public async ConsultarPropiedad(soloDisponibles = true) {
-    const [propiedad] = await db
-      .select({
-        propiedadID: propiedades.propiedadID,
-        titulo: propiedades.titulo,
-        descripcion: propiedades.descripcion,
-        precio: propiedades.precio,
-        tipoOperacionID: propiedades.tipoOperacionID,
-        habitaciones: propiedades.habitaciones,
-        direccion: propiedades.direccion,
-        ciudad: propiedades.ciudad,
-        estado: propiedades.estado,
-        destacada: propiedades.destacada,
-        fechaPublicacion: propiedades.fechaPublicacion,
-        tipoOperacion: tiposoperacion.descripcion,
-        agenteID: propiedades.agenteID,
-        constructoraID: propiedades.constructoraID,
-        constructoraNombre: constructoras.nombre,
-      })
+    const [propiedad] = await db.select({
+      propiedadID: propiedades.propiedadID,
+      titulo: propiedades.titulo,
+      descripcion: propiedades.descripcion,
+      precio: propiedades.precio,
+      tipoOperacionID: propiedades.tipoOperacionID,
+      habitaciones: propiedades.habitaciones,
+      direccion: propiedades.direccion,
+      ciudad: propiedades.ciudad,
+      estado: propiedades.estado,
+      destacada: propiedades.destacada,
+      fechaPublicacion: propiedades.fechaPublicacion,
+      tipoOperacion: tiposoperacion.descripcion,
+      agenteID: propiedades.agenteID,
+      constructoraID: propiedades.constructoraID,
+      constructoraNombre: constructoras.nombre,
+    })
       .from(propiedades)
       .innerJoin(
         tiposoperacion,
@@ -131,12 +129,14 @@ export class Propiedad {
 
     let agenteNombre: string | null = null;
     let agenteTelefono: string | null = null;
+    let agenteFoto: string | null = null;
 
     if (propiedad.agenteID) {
       const [agente] = await db
         .select({
           nombre: usuarios.nombre,
           telefono: usuarios.telefono,
+          fotoPerfil: usuarios.fotoPerfil,
         })
         .from(usuarios)
         .where(eq(usuarios.usuarioID, propiedad.agenteID))
@@ -145,6 +145,7 @@ export class Propiedad {
       if (agente) {
         agenteNombre = agente.nombre ?? null;
         agenteTelefono = agente.telefono ?? null;
+        agenteFoto = agente.fotoPerfil ?? null;
       }
     }
 
@@ -156,40 +157,44 @@ export class Propiedad {
       .from(imagenespropiedad)
       .where(eq(imagenespropiedad.propiedadID, this._idPropiedad!));
 
-    return { ...propiedad, agenteNombre, agenteTelefono, imagenes };
+    return { ...propiedad, agenteNombre, agenteTelefono, agenteFoto, imagenes };
   }
 
   public async SeleccionarPropiedades(filtros: FiltrosPropiedad = {}) {
     const condiciones = [];
 
     condiciones.push(eq(propiedades.estado, "Disponible"));
-    if (filtros.ciudad)
+    if (filtros.ciudad) {
       condiciones.push(like(propiedades.ciudad, `%${filtros.ciudad}%`));
-    if (filtros.tipoOperacionID)
+    }
+    if (filtros.tipoOperacionID) {
       condiciones.push(
         eq(propiedades.tipoOperacionID, filtros.tipoOperacionID),
       );
-    if (filtros.habitaciones)
+    }
+    if (filtros.habitaciones) {
       condiciones.push(eq(propiedades.habitaciones, filtros.habitaciones));
-    if (filtros.precioMin)
+    }
+    if (filtros.precioMin) {
       condiciones.push(gte(propiedades.precio, String(filtros.precioMin)));
-    if (filtros.precioMax)
+    }
+    if (filtros.precioMax) {
       condiciones.push(lte(propiedades.precio, String(filtros.precioMax)));
+    }
 
-    const query = db
-      .select({
-        propiedadID: propiedades.propiedadID,
-        titulo: propiedades.titulo,
-        descripcion: propiedades.descripcion,
-        precio: propiedades.precio,
-        habitaciones: propiedades.habitaciones,
-        direccion: propiedades.direccion,
-        ciudad: propiedades.ciudad,
-        estado: propiedades.estado,
-        destacada: propiedades.destacada,
-        fechaPublicacion: propiedades.fechaPublicacion,
-        tipoOperacion: tiposoperacion.descripcion,
-      })
+    const query = db.select({
+      propiedadID: propiedades.propiedadID,
+      titulo: propiedades.titulo,
+      descripcion: propiedades.descripcion,
+      precio: propiedades.precio,
+      habitaciones: propiedades.habitaciones,
+      direccion: propiedades.direccion,
+      ciudad: propiedades.ciudad,
+      estado: propiedades.estado,
+      destacada: propiedades.destacada,
+      fechaPublicacion: propiedades.fechaPublicacion,
+      tipoOperacion: tiposoperacion.descripcion,
+    })
       .from(propiedades)
       .innerJoin(
         tiposoperacion,
@@ -218,11 +223,12 @@ export class Propiedad {
   private async AdjuntarImagenPrincipal<T extends { propiedadID: number }>(
     lista: T[],
   ) {
-    if (lista.length === 0)
+    if (lista.length === 0) {
       return lista.map((p) => ({
         ...p,
         imagenPrincipal: null as string | null,
       }));
+    }
 
     const ids = lista.map((p) => p.propiedadID);
     const imagenes = await db
@@ -235,8 +241,9 @@ export class Propiedad {
 
     const mapaImagenes = new Map<number, string>();
     for (const img of imagenes) {
-      if (!mapaImagenes.has(img.propiedadID))
+      if (!mapaImagenes.has(img.propiedadID)) {
         mapaImagenes.set(img.propiedadID, img.url);
+      }
     }
 
     return lista.map((p) => ({
@@ -291,6 +298,7 @@ export class Propiedad {
       agenteID: propiedad.agenteID,
       estado: propiedad.estado ?? "Disponible",
       destacada: propiedad.destacada ? 1 : 0,
+      inmobiliariaID: propiedad.inmobiliariaID ?? null,
     });
     return Number((resultado as { insertId?: number }).insertId ?? 0);
   }
@@ -310,12 +318,9 @@ export class Propiedad {
         constructoraID: propiedad.constructoraID,
         agenteID: propiedad.agenteID,
         estado: propiedad.estado,
-        destacada:
-          propiedad.destacada === undefined
-            ? undefined
-            : propiedad.destacada
-              ? 1
-              : 0,
+        destacada: propiedad.destacada === undefined
+          ? undefined
+          : (propiedad.destacada ? 1 : 0),
         // inmobiliariaID no se toca
       })
       .where(eq(propiedades.propiedadID, this._idPropiedad!));
@@ -385,7 +390,50 @@ export class Propiedad {
       .limit(1);
     return !!fila && fila.agenteID === agenteID;
   }
+  public async SeleccionarPorInmobiliaria(inmobiliariaID: number) {
+    const filas = await db.select({
+      propiedadID: propiedades.propiedadID,
+      titulo: propiedades.titulo,
+      descripcion: propiedades.descripcion,
+      precio: propiedades.precio,
+      tipoOperacionID: propiedades.tipoOperacionID,
+      habitaciones: propiedades.habitaciones,
+      direccion: propiedades.direccion,
+      ciudad: propiedades.ciudad,
+      estado: propiedades.estado,
+      destacada: propiedades.destacada,
+      fechaPublicacion: propiedades.fechaPublicacion,
+      tipoOperacion: tiposoperacion.descripcion,
+      agenteID: propiedades.agenteID,
+      agenteNombre: usuarios.nombre,
+      constructoraID: propiedades.constructoraID,
+      constructoraNombre: constructoras.nombre,
+    })
+      .from(propiedades)
+      .leftJoin(
+        tiposoperacion,
+        eq(propiedades.tipoOperacionID, tiposoperacion.tipoOperacionID),
+      )
+      .leftJoin(usuarios, eq(propiedades.agenteID, usuarios.usuarioID))
+      .leftJoin(
+        constructoras,
+        eq(propiedades.constructoraID, constructoras.constructoraID),
+      )
+      .where(eq(propiedades.inmobiliariaID, inmobiliariaID))
+      .orderBy(desc(propiedades.fechaPublicacion));
 
+    return await this.AdjuntarImagenPrincipal(filas);
+  }
+
+  public async PerteneceAInmobiliaria(inmobiliariaID: number): Promise<boolean> {
+    const [fila] = await db
+        .select({ inmobiliariaID: propiedades.inmobiliariaID })
+            .from(propiedades)
+            .where(eq(propiedades.propiedadID, this._idPropiedad!))
+            .limit(1);
+        return !!fila && fila.inmobiliariaID === inmobiliariaID;
+  }
+  
   public async InsertarImagen(url: string): Promise<number> {
     const [resultado] = await db.insert(imagenespropiedad).values({
       propiedadID: this._idPropiedad!,
@@ -406,9 +454,9 @@ export class Propiedad {
 
     if (!fila || fila.propiedadID !== this._idPropiedad) return null;
 
-    await db
-      .delete(imagenespropiedad)
-      .where(eq(imagenespropiedad.imagenID, imagenID));
+    await db.delete(imagenespropiedad).where(
+      eq(imagenespropiedad.imagenID, imagenID),
+    );
     return fila.url;
   }
 }
