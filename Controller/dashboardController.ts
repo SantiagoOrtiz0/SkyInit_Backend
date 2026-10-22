@@ -1,13 +1,20 @@
 import { Context } from "../Dependencies/dependencias.ts";
-import { obtenerResumenAdmin, obtenerResumenAgente, obtenerResumenSuperAdmin } from "../Model/dashboardModel.ts";
+import { obtenerResumenInmobiliaria, obtenerResumenAgente, obtenerResumenSuperAdmin } from "../Model/dashboardModel.ts";
+import { obtenerInmobiliariaScope, ScopeError } from "../Middlewares/inmobiliariasScope.ts";
 import { buscarPorId } from "../Model/usuarioModel.ts";
 
 export const obtenerDashboardAdmin = async (ctx:Context) => {
     try {
-        const resumen = await obtenerResumenAdmin();
+        const scope = await obtenerInmobiliariaScope(ctx);
+        const resumen = await obtenerResumenInmobiliaria(scope.inmobiliariaId);
         ctx.response.status = 200;
         ctx.response.body = resumen;
     } catch (error) {
+        if (error instanceof ScopeError) {
+            ctx.response.status = error.status;
+            ctx.response.body = { error: error.message };
+            return;
+        }
         console.error(error);
         ctx.response.status = 500;
         ctx.response.body = { error: "Error al obtener estadisticas del dashboard"};
