@@ -56,11 +56,11 @@ export async function enviarCorreoEstadoSolicitud(
   estado: string,
   solicitudId: number,
 ): Promise<void> {
-  await enviarCorreo({
+    await enviarCorreo({
     destinatario,
-    asunto: `Tu solicitud de ${servicio} está ${estado} — SkyInit`,
+    asunto: `Actualización de tu solicitud #${solicitudId} — SkyInit`,
     mensaje:
-      `Hola ${nombre}, tu solicitud #${solicitudId} del servicio ${servicio} cambió a: ${estado}.`,
+      `Hola ${nombre}, el estado de tu solicitud #${solicitudId} del servicio ${servicio} ahora es: ${estado}.`,
     html: plantillaEstadoSolicitud(nombre, servicio, estado, solicitudId),
   });
 }
