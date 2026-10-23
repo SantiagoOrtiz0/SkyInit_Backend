@@ -179,10 +179,12 @@ export async function obtenerSolicitudesUsuario(usuarioId: number) {
             nombreServicio:     serviciosmantenimiento.nombre,
             descripcionServicio: serviciosmantenimiento.descripcion,
             precio:             serviciosmantenimiento.precio,
+            imagenServicio:     serviciosmantenimiento.imagen,
             notas:              serviciossolicitados.notas,
             fechaSolicitud:     serviciossolicitados.fechaSolicitud,
             estadoReparacionID: serviciossolicitados.estadoReparacionID,
             estado:             estadosreparacion.descripcion,
+            nombreInmobiliaria:  inmobiliarias.nombre,
         })
         .from(serviciossolicitados)
         .innerJoin(
@@ -192,6 +194,10 @@ export async function obtenerSolicitudesUsuario(usuarioId: number) {
         .leftJoin(
             estadosreparacion,
             eq(serviciossolicitados.estadoReparacionID, estadosreparacion.estadoReparacionID)
+        )
+        .leftJoin(                                              
+            inmobiliarias,
+            eq(serviciossolicitados.inmobiliariaID, inmobiliarias.inmobiliariaID)
         )
         .where(eq(serviciossolicitados.usuarioID, usuarioId));
 
