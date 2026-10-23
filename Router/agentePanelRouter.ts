@@ -5,16 +5,11 @@ import { agenteScopeMiddleware } from "../Middlewares/agenteScope.ts";
 import {
   listarMisPropiedades,
   verDetallePropiedad,
-  crearMiPropiedad,
   editarMiPropiedad,
-  eliminarMiPropiedad,
   subirImagenMiPropiedad,
   eliminarImagenMiPropiedad,
   listarMisProyectos,
-  editarMiProyecto,
   verDetalleProyecto,
-  subirImagenMiProyecto,
-  eliminarImagenMiProyecto,
   verMiPerfil,
   actualizarMiPerfil,
   subirFotoMiPerfil,
@@ -41,12 +36,6 @@ agentePanelRouter.get(
 );
 
 
-agentePanelRouter.post(
-  "/api/agente/panel/propiedades",
-  ...guardarAcceso,
-  crearMiPropiedad,
-);
-
 
 agentePanelRouter.put(
   "/api/agente/panel/propiedades/:id",
@@ -55,11 +44,6 @@ agentePanelRouter.put(
 );
 
 
-agentePanelRouter.delete(
-  "/api/agente/panel/propiedades/:id",
-  ...guardarAcceso,
-  eliminarMiPropiedad,
-);
 
 
 agentePanelRouter.post(
@@ -78,10 +62,8 @@ agentePanelRouter.delete(
 // --Proyectos ---------------------
 agentePanelRouter
   .get("/api/agente/panel/proyectos", ...guardarAcceso, listarMisProyectos)
-  .get("/api/agente/panel/proyectos/:id", ...guardarAcceso, verDetalleProyecto)
-  .put("/api/agente/panel/proyectos/:id", ...guardarAcceso, editarMiProyecto)
-  .post("/api/agente/panel/proyectos/:id/imagenes", ...guardarAcceso, subirImagenMiProyecto)
-  .delete("/api/agente/panel/proyectos/:id/imagenes/:imagenId", ...guardarAcceso, eliminarImagenMiProyecto);
+  .get("/api/agente/panel/proyectos/:id", ...guardarAcceso, verDetalleProyecto);
+
 
 agentePanelRouter
   .get("/api/agente/panel/perfil", ...guardarAcceso, verMiPerfil)

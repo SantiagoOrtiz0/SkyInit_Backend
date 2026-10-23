@@ -22,9 +22,9 @@ propiedadesRouter.get("/api/propiedades/:id", consultarPropiedad);
 
 //Rutas privadas (Agente y administrador)
 
-propiedadesRouter.post("/api/propiedades",authMiddleware,rolMiddleware("Agente","Administrador"),crearPropiedad);
-propiedadesRouter.put("/api/propiedades/:id",authMiddleware,rolMiddleware("Agente", "Administrador"),editarPropiedad);
-propiedadesRouter.delete("/api/propiedades/:id",authMiddleware,rolMiddleware("Agente", "Administrador"),eliminarPropiedad);
+propiedadesRouter.post("/api/propiedades",authMiddleware,rolMiddleware("Administrador"),crearPropiedad);
+propiedadesRouter.put("/api/propiedades/:id",authMiddleware,rolMiddleware("Administrador"),editarPropiedad);
+propiedadesRouter.delete("/api/propiedades/:id",authMiddleware,rolMiddleware("Administrador"),eliminarPropiedad);
 
 propiedadesRouter.post("/api/propiedades/:id/imagenes", authMiddleware, rolMiddleware("Agente", "Constructora", "Administrador"), postImagenPropiedad);
 propiedadesRouter.delete("/api/propiedades/:id/imagenes/:imagenId", authMiddleware,rolMiddleware("Agente","Constructora","Administrador"), deleteImagenPropiedad);
