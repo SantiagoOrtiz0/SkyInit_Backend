@@ -284,6 +284,21 @@ export class Propiedad {
     return await this.AdjuntarImagenPrincipal(filas);
   }
 
+  public async SeleccionarPorAgenteEnInmobiliaria(
+    agenteID: number,
+    inmobiliariaID: number,
+  ) {
+    const filas = await db
+    .select()
+    .from(propiedades)
+    .where(
+      and(
+        eq(propiedades.agenteID, agenteID),
+        eq(propiedades.inmobiliariaID, inmobiliariaID),
+      ),
+    );
+    return await this.AdjuntarImagenPrincipal(filas);
+  }
   public async InsertarPropiedad(): Promise<number> {
     const propiedad = this._ObjPropiedad!;
     const [resultado] = await db.insert(propiedades).values({
@@ -326,7 +341,18 @@ export class Propiedad {
       .where(eq(propiedades.propiedadID, this._idPropiedad!));
     return (resultado as any).affectedRows ?? 0;
   }
-
+  public async ActualizarDatosNoSensibles(datos: {
+    titulo?: string;
+    descripcion?: string | null;
+    habitaciones?: number | null;
+    estado?: PropiedadData["estado"];
+  }): Promise<number> {
+    const [resultado] = await db
+      .update(propiedades)
+      .set(datos)
+      .where(eq(propiedades.propiedadID, this._idPropiedad!));
+    return (resultado as any).affectedRows ?? 0;
+  }
   public async EliminarPropiedad(): Promise<number> {
     const [resultado] = await db
       .delete(propiedades)
@@ -425,15 +451,17 @@ export class Propiedad {
     return await this.AdjuntarImagenPrincipal(filas);
   }
 
-  public async PerteneceAInmobiliaria(inmobiliariaID: number): Promise<boolean> {
+  public async PerteneceAInmobiliaria(
+    inmobiliariaID: number,
+  ): Promise<boolean> {
     const [fila] = await db
-        .select({ inmobiliariaID: propiedades.inmobiliariaID })
-            .from(propiedades)
-            .where(eq(propiedades.propiedadID, this._idPropiedad!))
-            .limit(1);
-        return !!fila && fila.inmobiliariaID === inmobiliariaID;
+      .select({ inmobiliariaID: propiedades.inmobiliariaID })
+      .from(propiedades)
+      .where(eq(propiedades.propiedadID, this._idPropiedad!))
+      .limit(1);
+    return !!fila && fila.inmobiliariaID === inmobiliariaID;
   }
-  
+
   public async InsertarImagen(url: string): Promise<number> {
     const [resultado] = await db.insert(imagenespropiedad).values({
       propiedadID: this._idPropiedad!,

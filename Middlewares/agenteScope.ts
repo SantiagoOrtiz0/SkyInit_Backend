@@ -40,6 +40,7 @@ export async function agenteScopeMiddleware(
       usuarioID: usuarios.usuarioID,
       rolID: usuarios.rolID,
       estadoCuenta: usuarios.estadoCuenta,
+      inmobiliariaID: usuarios.inmobiliariaID,
     })
     .from(usuarios)
     .where(eq(usuarios.usuarioID, usuarioID))
@@ -67,5 +68,6 @@ export async function agenteScopeMiddleware(
 
   // Inyectar el ID confirmado desde BD (no solo desde el token)
   (ctx.state as { agenteID?: number }).agenteID = usuario.usuarioID;
+  (ctx.state as { inmobiliariaID?: number | null }).inmobiliariaID = usuario.inmobiliariaID ?? null;
   await next();
 }
