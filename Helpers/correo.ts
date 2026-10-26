@@ -28,22 +28,30 @@ const CrearCliente =():SMTPClient =>{
 
 
 export const enviarCorreo = async (datos: Datoscorreo): Promise<void> => {
-    try {
-        const client = CrearCliente();
-        console.log("Cliente SMTP creado correctamente, intentando enviar...");
-        
-        await client.send({
-            from: Deno.env.get("SMTP_USER")!,
-            to: datos.destinatario,
-            subject: datos.asunto,
-            content: datos.mensaje,
-            html: datos.html,
-        });
-        
-        await client.close();
-        console.log("¡Correo enviado por SMTP con éxito!");
-    } catch (error) {
-        console.error("ERROR CRÍTICO EN CLIENTE SMTP:", error);
-        throw error;
-    }
+  try {
+    const client = CrearCliente();
+
+    const plain =
+      datos.mensaje ||
+      "Notificación de SkyInit. Si no ves el mensaje, activa HTML en tu correo.";
+
+    const html =
+      datos.html && String(datos.html).trim().length > 0
+        ? datos.html
+        : `<pre style="font-family:Arial,sans-serif">${plain}</pre>`;
+
+    await client.send({
+      from: Deno.env.get("SMTP_USER")!,
+      to: datos.destinatario,
+      subject: datos.asunto,
+      content: plain, // texto plano
+      html: html, // HTML (obligatorio para el diseño)
+    });
+
+    await client.close();
+    console.log("Correo enviado a", datos.destinatario);
+  } catch (error) {
+    console.error("ERROR SMTP:", error);
+    throw error;
+  }
 };

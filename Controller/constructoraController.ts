@@ -110,63 +110,121 @@ export const getConstructorasporId = async (ctx:RouterContext<string>) => {
 
 };
 
-export const postConstructora = async (ctx:Context)=>{
+export const postConstructora = async (ctx: Context) => {
+  const { response, request, state } = ctx;
 
-
-    const {response, request}= ctx;
-
-    try {
-
-        if (!request.hasBody) {
-            response.status = 400;
-            response.body = {
-                success : false,
-                message : "el cuerpo de la peticion esta vacio"
-
-            };
-            return;
-        }
-
-        const body = await request.body.json();
-        const { nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID, inmobiliariaID } = body;
-
-
-        if (!nombre || !descripcion) {
-            response.status = 400;
-            response.body = {
-                success: false,
-                message: "nombre y descripcion son obligatorios",
-            };
-            return;
-        }
-
-        const constructora = new Constructora({
-        nombre, descripcion, contacto, telefono, correo, estado, logo, ciudad, usuarioID,
-        });
-
-        const nuevoId = await constructora.CrearConstructora();
-
-        // Solo SuperAdmin debería mandar esto (ya lo filtras en front)
-        if (inmobiliariaID && nuevoId) {
-        const c = new Constructora(null, nuevoId);
-        await c.VincularInmobiliaria(Number(inmobiliariaID));
-        }
-
-        response.status = 201;
-        response.body = { success: true, mensaje: "Constructora creada correctamente", id: nuevoId };
-
-
-
-    } catch (error) {
-
-        console.error("ERROR AL CREAR CONSTRUCTORA:", error);
-        response.status = 500;
-        response.body = {
-            success: false,
-            mensaje: "Error al crear la constructora",
-    };
+  try {
+    if (!request.hasBody) {
+      response.status = 400;
+      response.body = {
+        success: false,
+        message: "El cuerpo de la petición está vacío",
+      };
+      return;
     }
-}
+
+    const body = await request.body.json();
+    const {
+      nombre,
+      descripcion,
+      contacto,
+      telefono,
+      correo,
+      estado,
+      logo,
+      ciudad,
+      usuarioID,
+      inmobiliariaID,
+    } = body;
+
+    if (!nombre || !descripcion) {
+      response.status = 400;
+      response.body = {
+        success: false,
+        message: "nombre y descripcion son obligatorios",
+      };
+      return;
+    }
+
+    // Quién está creando
+    const userState = state.user as {
+      sub?: string;
+      rol?: string;
+      nombreRol?: string;
+    };
+    const rol = String(userState?.rol ?? userState?.nombreRol ?? "");
+    const usuarioId = Number(userState?.sub);
+
+    // Inmobiliaria a vincular
+    let inmoId: number | null = inmobiliariaID
+      ? Number(inmobiliariaID)
+      : null;
+
+    // Admin: si no manda inmobiliaria, usar la de su usuario
+    if ((!inmoId || isNaN(inmoId)) && rol === "Administrador" && usuarioId) {
+      const u = await buscarPorId(usuarioId);
+      const idInmo = Number(
+        (u as { inmobiliariaID?: number })?.inmobiliariaID ?? 0,
+      );
+      inmoId = idInmo > 0 ? idInmo : null;
+    }
+
+    if (rol === "Administrador" && !inmoId) {
+      response.status = 400;
+      response.body = {
+        success: false,
+        message:
+          "Tu cuenta de administrador no tiene inmobiliaria asignada. No se puede crear la constructora.",
+      };
+      return;
+    }
+
+    const constructora = new Constructora({
+      nombre,
+      descripcion,
+      contacto,
+      telefono,
+      correo,
+      estado: estado ?? "Activo",
+      logo,
+      ciudad,
+      usuarioID: usuarioID ?? null,
+    });
+
+    // Usa el método que tengas: CrearConstructora o InsertarConstructora
+    const nuevoId = await constructora.CrearConstructora();
+    // const nuevoId = await constructora.InsertarConstructora();
+
+    if (!nuevoId) {
+      response.status = 500;
+      response.body = {
+        success: false,
+        message: "No se pudo crear la constructora",
+      };
+      return;
+    }
+
+    if (inmoId) {
+      const c = new Constructora(null, nuevoId);
+      await c.VincularInmobiliaria(inmoId);
+    }
+
+    response.status = 201;
+    response.body = {
+      success: true,
+      mensaje: "Constructora creada correctamente",
+      id: nuevoId,
+      inmobiliariaID: inmoId,
+    };
+  } catch (error) {
+    console.error("ERROR AL CREAR CONSTRUCTORA:", error);
+    response.status = 500;
+    response.body = {
+      success: false,
+      mensaje: "Error al crear la constructora",
+    };
+  }
+};
 
 export const putConstructora = async (ctx: RouterContext<string>) => {
     const { response, params, request } = ctx;

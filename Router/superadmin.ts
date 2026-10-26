@@ -11,6 +11,7 @@ import {
   verPerfilSuperAdmin,
   actualizarPerfilSuperAdmin,
   subirFotoPerfilSuperAdmin,
+  
 } from "../Controller/superadmincontroller.ts";
 import {
   getInmobiliarias,
@@ -18,6 +19,9 @@ import {
   putInmobiliaria,
   patchAsignarUsuarios,
 } from "../Controller/inmobiliariasuperadminController.ts";
+
+import { deleteConstructora } from "../Controller/constructoraController.ts";
+// o si ya tienes delete en superadmincontroller, usa ese
 
 const superadminRouter = new Router();
 const proteger = [authMiddleware, rolMiddleware("SuperAdmin")] as const;
@@ -33,6 +37,11 @@ superadminRouter
   .get("/superadmin/constructoras", ...proteger, getConstructorasSA)
   .post("/superadmin/constructoras", ...proteger, postConstructoraSA)
   .put("/superadmin/constructoras/:id", ...proteger, putConstructoraSA)
+  .delete(
+    "/superadmin/constructoras/:id",
+    ...proteger,
+    deleteConstructora, // o deleteConstructoraSA si la defines en el controller SA
+  )
   .patch(
     "/superadmin/inmobiliarias/:id/asignar",
     ...proteger,
