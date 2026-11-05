@@ -44,7 +44,19 @@ constructoraRouter
     authMiddleware,
     rolMiddleware("Administrador"),
     putConstructora,
+  )
+
+  .post(
+    "/constructoras/:id/vincular",
+    authMiddleware,
+    rolMiddleware("Administrador"),
+    postVincularInmobiliaria,
+  )
+  .delete(
+    "/constructoras/:id/desvincular",
+    authMiddleware,
+    rolMiddleware("Administrador"),
+    deleteDesvincularInmobiliaria,
   );
-  // Sin DELETE global aquí: eso es SuperAdmin
 
 export { constructoraRouter };

@@ -10,9 +10,9 @@ interface Datoscorreo  {
 
 
 const CrearCliente =():SMTPClient =>{
-    const SMTP_HOST = Deno.env.get("SMTP_HOST")!;
+    const SMTP_HOST = Deno.env.get("SMTP_HOST")!.trim();
     const SMTP_PORT = Number(Deno.env.get("SMTP_PORT"));
-    const SMTP_USER = Deno.env.get("SMTP_USER")!;
+    const SMTP_USER = Deno.env.get("SMTP_USER")!.trim();
     const SMTP_PASSWORD = Deno.env.get("SMTP_PASSWORD")?.trim() ?? "";
 
     if (!SMTP_HOST|| !SMTP_PORT || !SMTP_USER || !SMTP_PASSWORD){throw new Error ("error alguna variable de entorno esta mal configurada")}
