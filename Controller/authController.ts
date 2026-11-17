@@ -8,9 +8,6 @@ import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import {  actualizarFotoPerfil } from "../Model/usuarioModel.ts";
 import {buscarCodigoReset,generarCodigo6,} from "../Model/passwordResetModel.ts";
 
-const FRONT_URL = Deno.env.get("FRONT_URL") ?? "http://localhost:4321";
-
-
 // ---REGISTRO---
 export async function registro (ctx: Context) {
     try {
