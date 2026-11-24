@@ -13,7 +13,7 @@ const pool = mysql.createPool({
     host: Deno.env.get("DB_HOST") ?? "127.0.0.1",
     port: Number(Deno.env.get("DB_PORT") ?? 3306),
     user: requerida("DB_USER"),
-    password: requerida("DB_PASS"),
+    password: Deno.env.get("DB_PASS") ?? "",
     database: Deno.env.get("DB_NAME") ?? "skyinit",
     connectionLimit: 10,
 });
