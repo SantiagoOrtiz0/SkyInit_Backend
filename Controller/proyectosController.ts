@@ -5,6 +5,32 @@ import {
   obtenerInmobiliariaScope,
   ScopeError,
 } from "../Middlewares/inmobiliariasScope.ts";
+import { Constructora } from "../Model/constructoraModel.ts";
+import { leerCoordenadasOpcionales } from "./propiedadesController.ts";
+
+// La constructora de un proyecto debe estar vinculada a la inmobiliaria del admin
+async function constructoraVinculada(constructoraID: unknown, inmobiliariaID: unknown): Promise<boolean> {
+  const idConstructora = Number(constructoraID);
+  const idInmobiliaria = Number(inmobiliariaID);
+  if (!Number.isInteger(idConstructora) || idConstructora <= 0 || !idInmobiliaria) return false;
+  return await new Constructora(null, idConstructora).EstaVinculadaAInmobiliaria(idInmobiliaria);
+}
+
+// El administrador solo puede operar proyectos de SU inmobiliaria
+async function adminPuedeGestionarProyecto(ctx: any, idProyecto: number): Promise<boolean> {
+  try {
+    const scope = await obtenerInmobiliariaScope(ctx);
+    return await new Proyecto(null, idProyecto).PerteneceAInmobiliaria(scope.inmobiliariaId);
+  } catch (e) {
+    if (e instanceof ScopeError) return false;
+    throw e;
+  }
+}
+
+function denegar(ctx: any) {
+  ctx.response.status = 403;
+  ctx.response.body = { error: "No tienes permisos sobre este proyecto" };
+}
 
 // Listar proyectos con filtros (Publica)
 export const listarProyectos = async (ctx: Context) => {
@@ -162,6 +188,22 @@ export const crearProyecto = async (ctx: Context) => {
     }
 
     const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
+
+    if (!(await constructoraVinculada(idConstructora, idInmobiliaria))) {
+      ctx.response.status = 403;
+      ctx.response.body = {
+        error: "La constructora indicada no esta vinculada a tu inmobiliaria",
+      };
+      return;
+    }
+
+    const coords = leerCoordenadasOpcionales(body);
+    if (!coords.ok) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: coords.error };
+      return;
+    }
+
     const nuevoProyecto = new Proyecto({
       nombre,
       estadoProyectoID: Number(estadoProyectoID),
@@ -172,6 +214,8 @@ export const crearProyecto = async (ctx: Context) => {
       descripcion: descripcion ?? null,
       ubicacion: ubicacion ?? null,
       inmobiliariaID: idInmobiliaria,
+      latitud: coords.latitud,
+      longitud: coords.longitud,
     });
 
     const filasAfectadas = await nuevoProyecto.InsertarProyecto();
@@ -209,6 +253,10 @@ export const editarProyecto = async (ctx: any) => {
     }
 
     const esAdministrador = usuario?.rol === "Administrador";
+    if (esAdministrador && !(await adminPuedeGestionarProyecto(ctx, Number(id)))) {
+      denegar(ctx);
+      return;
+    }
     if (
       !esAdministrador &&
       existente.constructoraID !== (ctx.state as any).constructoraID
@@ -245,7 +293,28 @@ export const editarProyecto = async (ctx: any) => {
     const idConstructora = esAdministrador
       ? (constructoraID ?? existente.constructoraID)
       : existente.constructoraID;
-    const idInmobiliaria = (ctx.state as any).inmobiliariaID ?? null;
+
+    // Si el admin cambia la constructora, debe estar vinculada a su inmobiliaria
+    if (
+      esAdministrador &&
+      idConstructora != null &&
+      Number(idConstructora) !== existente.constructoraID &&
+      !(await constructoraVinculada(idConstructora, (ctx.state as any).inmobiliariaID))
+    ) {
+      ctx.response.status = 403;
+      ctx.response.body = {
+        error: "La constructora indicada no esta vinculada a tu inmobiliaria",
+      };
+      return;
+    }
+
+    const coords = leerCoordenadasOpcionales(body);
+    if (!coords.ok) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: coords.error };
+      return;
+    }
+
     const proyectoEditado = new Proyecto({
       nombre,
       estadoProyectoID: Number(estadoProyectoID),
@@ -255,7 +324,9 @@ export const editarProyecto = async (ctx: any) => {
       constructoraID: idConstructora,
       descripcion: descripcion ?? null,
       ubicacion: ubicacion ?? null,
-      inmobiliariaID: idInmobiliaria ?? undefined,
+      latitud: coords.latitud,
+      longitud: coords.longitud,
+      // inmobiliariaID no se toca al editar
     }, Number(id));
 
     const filasAfectadas = await proyectoEditado.ActualizarProyecto();
@@ -345,6 +416,11 @@ export const eliminarProyecto = async (ctx: any) => {
       return;
     }
 
+    if (!(await adminPuedeGestionarProyecto(ctx, Number(id)))) {
+      denegar(ctx);
+      return;
+    }
+
     // Se leen las imagenes antes de borrar, porque la BD borra en cascada
     const imagenes = await modeloProyecto.ListarImagenes();
     const filasAfectadas = await modeloProyecto.EliminarProyecto();
@@ -380,6 +456,11 @@ export const subirImagenProyecto = async (ctx: any) => {
     if (!existente) {
       ctx.response.status = 404;
       ctx.response.body = { error: "Proyecto no encontrado" };
+      return;
+    }
+
+    if (!(await adminPuedeGestionarProyecto(ctx, idProyecto))) {
+      denegar(ctx);
       return;
     }
 
@@ -425,6 +506,11 @@ export const eliminarImagenProyecto = async (ctx: any) => {
     if (Number.isNaN(idProyecto) || Number.isNaN(idImagen)) {
       ctx.response.status = 400;
       ctx.response.body = { error: "ID invalido" };
+      return;
+    }
+
+    if (!(await adminPuedeGestionarProyecto(ctx, idProyecto))) {
+      denegar(ctx);
       return;
     }
 

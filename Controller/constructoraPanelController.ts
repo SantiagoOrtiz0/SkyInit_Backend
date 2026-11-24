@@ -4,7 +4,7 @@ import { Proyecto } from "../Model/proyectosModel.ts";
 import { Propiedad } from "../Model/propiedadesModel.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import { bcrypt } from "../Dependencies/dependencias.ts";
-import { buscarPorId, actualizarPerfil } from "../Model/usuarioModel.ts";
+import { buscarPorId, actualizarPerfil, esAgenteDeInmobiliaria } from "../Model/usuarioModel.ts";
 import { notificarAdminsAvance } from "../services/emailServices.ts";
 
 // Helper local: castea el state con el que dejamos constructoraID
@@ -268,9 +268,10 @@ export const postProyecto = async (ctx: Context) => {
             inmobiliariaID,
         });
 
-        const id = await proyecto.InsertarProyecto();
+        await proyecto.InsertarProyecto();
         response.status = 201;
-        response.body = { success: true, message: "Proyecto creado correctamente", data: { proyectoID: id } };
+        // InsertarProyecto devuelve las filas afectadas; el id real queda en _idProyecto
+        response.body = { success: true, message: "Proyecto creado correctamente", data: { proyectoID: proyecto._idProyecto } };
     } catch (error) {
         console.error("ERROR AL CREAR PROYECTO:", error);
         response.status = 500;
@@ -527,7 +528,8 @@ export const getPropiedadConstructoraPorId = async (ctx: RouterContext<"/panel/c
             return;
         }
 
-        const data = await propiedad.ConsultarPropiedad();
+        // false: la constructora debe poder ver sus propiedades en cualquier estado, no solo las disponibles
+        const data = await propiedad.ConsultarPropiedad(false);
         response.status = 200;
         response.body = { success: true, data };
     } catch (error) {
@@ -546,6 +548,15 @@ export const postPropiedadConstructora = async (ctx: Context) => {
         if (!titulo || !precio || !tipoOperacionID || !direccion) {
             response.status = 400;
             response.body = { success: false, message: "Titulo, precio, tipoOperacionID y direccion son obligatorios" };
+            return;
+        }
+
+        if (agenteID != null && agenteID !== "" && !(await esAgenteDeInmobiliaria(
+            Number(agenteID),
+            ((state as any).inmobiliariasVinculadas as number[] | undefined) ?? [],
+        ))) {
+            response.status = 403;
+            response.body = { success: false, message: "El agente indicado no pertenece a una inmobiliaria vinculada a tu constructora" };
             return;
         }
 
@@ -599,6 +610,15 @@ export const putPropiedadConstructora = async (ctx: RouterContext<"/panel/constr
         if (!titulo || !precio || !tipoOperacionID || !direccion) {
             response.status = 400;
             response.body = { success: false, message: "Titulo, precio, tipoOperacionID y direccion son obligatorios" };
+            return;
+        }
+
+        if (agenteID != null && agenteID !== "" && !(await esAgenteDeInmobiliaria(
+            Number(agenteID),
+            ((state as any).inmobiliariasVinculadas as number[] | undefined) ?? [],
+        ))) {
+            response.status = 403;
+            response.body = { success: false, message: "El agente indicado no pertenece a una inmobiliaria vinculada a tu constructora" };
             return;
         }
 

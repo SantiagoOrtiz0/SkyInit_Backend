@@ -7,14 +7,108 @@ import {
   obtenerInmobiliariaScope,
   ScopeError,
 } from "../Middlewares/inmobiliariasScope.ts";
+import { Constructora } from "../Model/constructoraModel.ts";
+import { esAgenteDeInmobiliaria } from "../Model/usuarioModel.ts";
+
+// ── Aislamiento por inmobiliaria ─────────────────────────────────────────────
+
+// Inmobiliaria del usuario autenticado (cualquier rol), leida de la BD
+async function inmobiliariaDelUsuario(ctx: any): Promise<number | null> {
+  const id = Number(ctx.state.user?.sub);
+  if (!id) return null;
+  const [u] = await db
+    .select({ inmobiliariaID: usuarios.inmobiliariaID })
+    .from(usuarios)
+    .where(eq(usuarios.usuarioID, id))
+    .limit(1);
+  return u?.inmobiliariaID ?? null;
+}
+
+// SuperAdmin sin ?inmobiliariaId= ve toda la plataforma; el resto queda acotado
+function superAdminSinFiltro(ctx: any): boolean {
+  return ctx.state.user?.rol === "SuperAdmin" &&
+    !ctx.request.url.searchParams.get("inmobiliariaId");
+}
+
+const vacio = (v: unknown) => v === undefined || v === null || v === "";
+
+// Devuelve un mensaje si el agente o la constructora del body no son de la inmobiliaria
+async function referenciaAjena(
+  inmobiliariaId: number,
+  agenteID: unknown,
+  constructoraID: unknown,
+): Promise<string | null> {
+  if (
+    !vacio(agenteID) &&
+    !(await esAgenteDeInmobiliaria(Number(agenteID), [inmobiliariaId]))
+  ) {
+    return "El agente indicado no pertenece a tu inmobiliaria";
+  }
+  if (
+    !vacio(constructoraID) &&
+    !(await new Constructora(null, Number(constructoraID))
+      .EstaVinculadaAInmobiliaria(inmobiliariaId))
+  ) {
+    return "La constructora indicada no esta vinculada a tu inmobiliaria";
+  }
+  return null;
+}
+
+// latitud / longitud opcionales del body:
+//   ausente = no se toca · null (o "") = se borra · numero = se guarda con 7 decimales
+export function leerCoordenadasOpcionales(body: any):
+  | { ok: true; latitud?: string | null; longitud?: string | null }
+  | { ok: false; error: string } {
+  const out: { ok: true; latitud?: string | null; longitud?: string | null } = {
+    ok: true,
+  };
+  for (const [campo, max] of [["latitud", 90], ["longitud", 180]] as const) {
+    const v = body?.[campo];
+    if (v === undefined) continue;
+    if (v === null || v === "") {
+      out[campo] = null;
+      continue;
+    }
+    const n = typeof v === "number" || typeof v === "string" ? Number(v) : NaN;
+    if (!Number.isFinite(n) || Math.abs(n) > max) {
+      return {
+        ok: false,
+        error: `La ${campo} debe ser un numero entre -${max} y ${max}`,
+      };
+    }
+    out[campo] = n.toFixed(7);
+  }
+  if (
+    out.latitud !== undefined && out.longitud !== undefined &&
+    (out.latitud === null) !== (out.longitud === null)
+  ) {
+    return {
+      ok: false,
+      error: "latitud y longitud deben enviarse juntas (ambas con valor o ambas null)",
+    };
+  }
+  return out;
+}
 
 // ── Admin ────────────────────────────────────────────────────────────────────
 
 export const ListarPropiedadesAdmin = async (ctx: any) => {
   try {
+    // El Administrador solo lista las propiedades de SU inmobiliaria
+    const modelo = new Propiedad();
+    const lista = superAdminSinFiltro(ctx)
+      ? await modelo.SeleccionarTodasAdmin()
+      : await modelo.SeleccionarPorInmobiliaria(
+        (await obtenerInmobiliariaScope(ctx)).inmobiliariaId,
+      );
     ctx.response.status = 200;
-    ctx.response.body = await new Propiedad().SeleccionarTodasAdmin();
+    ctx.response.body = lista;
   } catch (error) {
+    if (error instanceof ScopeError) {
+      ctx.response.status = error.status;
+      ctx.response.body = { error: error.message };
+      return;
+    }
     console.log(error);
     ctx.response.status = 500;
     ctx.response.body = { error: "Error al listar las propiedades" };
@@ -23,6 +117,14 @@ export const ListarPropiedadesAdmin = async (ctx: any) => {
 
 export const listarAgentes = async (ctx: any) => {
   try {
+    // El Administrador solo ve los agentes de SU inmobiliaria
+    const filtroInmobiliaria = superAdminSinFiltro(ctx)
+      ? undefined
+      : eq(
+        usuarios.inmobiliariaID,
+        (await obtenerInmobiliariaScope(ctx)).inmobiliariaId,
+      );
+
     const agentes = await db
       .select({
         usuarioID: usuarios.usuarioID,
@@ -32,13 +134,22 @@ export const listarAgentes = async (ctx: any) => {
       .from(usuarios)
       .innerJoin(roles, eq(usuarios.rolID, roles.rolID))
       .where(
-        and(eq(roles.nombreRol, "Agente"), eq(usuarios.estadoCuenta, "Activa")),
+        and(
+          eq(roles.nombreRol, "Agente"),
+          eq(usuarios.estadoCuenta, "Activa"),
+          filtroInmobiliaria,
+        ),
       )
       .orderBy(usuarios.nombre);
 
     ctx.response.status = 200;
     ctx.response.body = agentes;
   } catch (error) {
+    if (error instanceof ScopeError) {
+      ctx.response.status = error.status;
+      ctx.response.body = { error: error.message };
+      return;
+    }
     console.log(error);
     ctx.response.status = 500;
     ctx.response.body = { error: "Error al listar los agentes" };
@@ -102,7 +213,8 @@ export const listarPorAgente = async (ctx: any) => {
     );
 
     ctx.response.status = 200;
-    ctx.response.body = propiedades;
+    // Ruta publica: solo se expone lo publicado en el catalogo
+    ctx.response.body = propiedades.filter((p) => p.estado === "Disponible");
   } catch (error) {
     console.log(error);
     ctx.response.status = 500;
@@ -142,10 +254,26 @@ export const consultarPropiedadDetalle = async (ctx: any) => {
     const modeloPropiedad = new Propiedad(null, Number(id));
 
     const rol = (ctx.state as any).user?.rol;
-    const verTodas = rol === "Administrador" || rol === "Agente";
+    // Administrador / Agente ven propiedades no publicadas solo si son de SU
+    // inmobiliaria; de las ajenas ven lo mismo que el catalogo publico.
+    const esGestor = rol === "Administrador" || rol === "Agente";
+    let verTodas = rol === "SuperAdmin";
+    if (esGestor) {
+      const inmobiliariaId = await inmobiliariaDelUsuario(ctx);
+      verTodas = !!inmobiliariaId &&
+        (await modeloPropiedad.PerteneceAInmobiliaria(inmobiliariaId));
+    }
     const propiedad = await modeloPropiedad.ConsultarPropiedad(!verTodas);
 
     if (!propiedad) {
+      if (
+        esGestor && !verTodas &&
+        (await modeloPropiedad.ConsultarPropiedad(false))
+      ) {
+        ctx.response.status = 403;
+        ctx.response.body = { error: "No tienes permisos sobre esta propiedad" };
+        return;
+      }
       ctx.response.status = 404;
       ctx.response.body = { error: "Propiedad no encontrada o no disponible" };
       return;
@@ -230,6 +358,25 @@ export const crearPropiedad = async (ctx: Context) => {
 
       const scope = await obtenerInmobiliariaScope(ctx);
 
+    // El agente y la constructora del body deben ser de la misma inmobiliaria
+    const ajena = await referenciaAjena(
+      scope.inmobiliariaId,
+      idAgente,
+      constructoraID,
+    );
+    if (ajena) {
+      ctx.response.status = 403;
+      ctx.response.body = { error: ajena };
+      return;
+    }
+
+    const coords = leerCoordenadasOpcionales(body);
+    if (!coords.ok) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: coords.error };
+      return;
+    }
+
     const nuevaPropiedad = new Propiedad({
       titulo,
       descripcion: descripcion ?? null,
@@ -243,6 +390,8 @@ export const crearPropiedad = async (ctx: Context) => {
       estado: estado ?? "Disponible",
       destacada: destacada ?? false,
       inmobiliariaID: scope.inmobiliariaId,
+      latitud: coords.latitud,
+      longitud: coords.longitud,
     });
 
     const filasAfectadas = await nuevaPropiedad.InsertarPropiedad();
@@ -254,6 +403,11 @@ export const crearPropiedad = async (ctx: Context) => {
       ctx.response.body = { error: "No se pudo crear la propiedad" };
     }
   } catch (error) {
+    if (error instanceof ScopeError) {
+      ctx.response.status = error.status;
+      ctx.response.body = { error: error.message };
+      return;
+    }
     console.log(error);
     ctx.response.status = 500;
     ctx.response.body = { error: "Error interno al crear la propiedad" };
@@ -299,6 +453,33 @@ export const editarPropiedad = async (ctx: any) => {
       return;
     }
 
+    // Si cambia el agente o la constructora, deben ser de la misma inmobiliaria
+    const actual = await new Propiedad(null, idPropiedad).ConsultarPropiedad(
+      false,
+    );
+    const scope = await obtenerInmobiliariaScope(ctx);
+    const ajena = await referenciaAjena(
+      scope.inmobiliariaId,
+      !vacio(agenteID) && Number(agenteID) !== actual?.agenteID
+        ? agenteID
+        : null,
+      !vacio(constructoraID) && Number(constructoraID) !== actual?.constructoraID
+        ? constructoraID
+        : null,
+    );
+    if (ajena) {
+      ctx.response.status = 403;
+      ctx.response.body = { error: ajena };
+      return;
+    }
+
+    const coords = leerCoordenadasOpcionales(body);
+    if (!coords.ok) {
+      ctx.response.status = 400;
+      ctx.response.body = { error: coords.error };
+      return;
+    }
+
     const propiedadEditada = new Propiedad({
       titulo,
       descripcion: descripcion ?? null,
@@ -311,6 +492,8 @@ export const editarPropiedad = async (ctx: any) => {
       agenteID: agenteID ?? null,
       estado: estado ?? "Disponible",
       destacada: destacada ?? false,
+      latitud: coords.latitud,
+      longitud: coords.longitud,
       // inmobiliariaID no se toca
     }, Number(id));
 
@@ -323,6 +506,11 @@ export const editarPropiedad = async (ctx: any) => {
       ctx.response.body = { error: "Propiedad no encontrada o sin cambios" };
     }
   } catch (error) {
+    if (error instanceof ScopeError) {
+      ctx.response.status = error.status;
+      ctx.response.body = { error: error.message };
+      return;
+    }
     console.log(error);
     ctx.response.status = 500;
     ctx.response.body = { error: "Error al editar la propiedad" };
@@ -371,7 +559,16 @@ async function puedeGestionarPropiedad(
   const usuario = ctx.state.user as { sub?: string; rol?: string } | undefined;
   const modeloPropiedad = new Propiedad(null, idPropiedad);
 
-  if (usuario?.rol === "Administrador") return true; // Sin restricción
+  if (usuario?.rol === "Administrador") {
+    // El administrador solo gestiona propiedades de SU inmobiliaria
+    try {
+      const scope = await obtenerInmobiliariaScope(ctx);
+      return await modeloPropiedad.PerteneceAInmobiliaria(scope.inmobiliariaId);
+    } catch (e) {
+      if (e instanceof ScopeError) return false;
+      throw e;
+    }
+  }
 
   if (usuario?.rol === "Constructora") {
     const [fila] = await db
@@ -387,7 +584,11 @@ async function puedeGestionarPropiedad(
     return await modeloPropiedad.PerteneceAConstructora(fila.constructoraID);
   }
 
-  return await modeloPropiedad.PerteneceAAgente(Number(usuario?.sub));
+  // Agente: la propiedad debe estar asignada a el Y ser de su inmobiliaria
+  const inmobiliariaId = await inmobiliariaDelUsuario(ctx);
+  return !!inmobiliariaId &&
+    (await modeloPropiedad.PerteneceAAgente(Number(usuario?.sub))) &&
+    (await modeloPropiedad.PerteneceAInmobiliaria(inmobiliariaId));
 }
 
 // ── Imágenes ──────────────────────────────────────────────────────────────────

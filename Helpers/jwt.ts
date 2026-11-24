@@ -2,7 +2,10 @@ import { create, getNumericDate, verify } from "../Dependencies/dependencias.ts"
 import { generarKey } from "./CriptoKey.ts";
 import { Context } from "../Dependencies/dependencias.ts";
 
-const secret = Deno.env.get("SECRET_KEY") || "default_key";
+const secret = Deno.env.get("SECRET_KEY") ?? "";
+if (secret.length < 32) {
+    throw new Error("SECRET_KEY no esta definida o es demasiado corta (minimo 32 caracteres). Revisa el archivo .env.");
+}
 const server = Deno.env.get("SERVER");
 const IS_PROD = Deno.env.get("ENV") === "production";
 

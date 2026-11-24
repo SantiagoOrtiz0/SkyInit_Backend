@@ -1,6 +1,23 @@
 import { Constructora } from "../Model/constructoraModel.ts";
 import { Context,RouterContext } from "../Dependencies/dependencias.ts";
 import { buscarPorId } from "../Model/usuarioModel.ts";
+import { obtenerInmobiliariaScope, ScopeError } from "../Middlewares/inmobiliariasScope.ts";
+
+// Inmobiliaria a la que queda acotado un Administrador (lanza ScopeError si no tiene).
+// Devuelve null para SuperAdmin (administra toda la plataforma).
+async function inmobiliariaDelAdmin(ctx: Context): Promise<number | null> {
+    const rol = (ctx.state.user as { rol?: string } | undefined)?.rol;
+    if (rol === "SuperAdmin") return null;
+    return (await obtenerInmobiliariaScope(ctx)).inmobiliariaId;
+}
+
+function denegarAjena(ctx: Context) {
+    ctx.response.status = 403;
+    ctx.response.body = {
+        success: false,
+        message: "No tienes permisos sobre esta constructora",
+    };
+}
 
 export const getConstructoras = async (ctx: Context) => {
     const { response, state } = ctx;
@@ -81,6 +98,14 @@ export const getConstructorasporId = async (ctx:RouterContext<string>) => {
 
 
         const constructora = new Constructora(null, id);
+
+        // El administrador solo consulta constructoras vinculadas a SU inmobiliaria
+        const inmoAdmin = await inmobiliariaDelAdmin(ctx);
+        if (inmoAdmin !== null && !(await constructora.EstaVinculadaAInmobiliaria(inmoAdmin))) {
+            denegarAjena(ctx);
+            return;
+        }
+
         const data = await constructora.SeleccionarConstructoraporId();
 
 
@@ -100,6 +125,11 @@ export const getConstructorasporId = async (ctx:RouterContext<string>) => {
         };
         
     } catch (error) {
+        if (error instanceof ScopeError) {
+            response.status = error.status;
+            response.body = { success: false, message: error.message };
+            return;
+        }
             console.error("ERROR AL OBTENER CONSTRUCTORA:", error);
             response.status = 500;
             response.body = {
@@ -169,6 +199,20 @@ export const postConstructora = async (ctx: Context) => {
       inmoId = idInmo > 0 ? idInmo : null;
     }
 
+    // El administrador solo puede crear constructoras vinculadas a SU inmobiliaria
+    if (rol !== "SuperAdmin") {
+      const propia = (await obtenerInmobiliariaScope(ctx)).inmobiliariaId;
+      if (inmoId && inmoId !== propia) {
+        response.status = 403;
+        response.body = {
+          success: false,
+          message: "Solo puedes vincular constructoras a tu propia inmobiliaria",
+        };
+        return;
+      }
+      inmoId = propia;
+    }
+
     if (rol === "Administrador" && !inmoId) {
       response.status = 400;
       response.body = {
@@ -217,6 +261,11 @@ export const postConstructora = async (ctx: Context) => {
       inmobiliariaID: inmoId,
     };
   } catch (error) {
+    if (error instanceof ScopeError) {
+      response.status = error.status;
+      response.body = { success: false, message: error.message };
+      return;
+    }
     console.error("ERROR AL CREAR CONSTRUCTORA:", error);
     response.status = 500;
     response.body = {
@@ -270,15 +319,40 @@ export const putConstructora = async (ctx: RouterContext<string>) => {
         id,
         );
 
+        // El administrador solo edita constructoras vinculadas a SU inmobiliaria
+        // y no puede tocar los vinculos con otras inmobiliarias
+        const inmoAdmin = await inmobiliariaDelAdmin(ctx);
+        if (inmoAdmin !== null) {
+            if (!(await constructora.EstaVinculadaAInmobiliaria(inmoAdmin))) {
+                denegarAjena(ctx);
+                return;
+            }
+            if (inmobiliariaID && Number(inmobiliariaID) !== inmoAdmin) {
+                response.status = 403;
+                response.body = {
+                    success: false,
+                    message: "Solo puedes vincular constructoras a tu propia inmobiliaria",
+                };
+                return;
+            }
+        }
+
         await constructora.ActualizarConstructora();
 
         if (inmobiliariaID !== undefined) {
+        if (inmoAdmin !== null) {
+            // Administrador: solo puede quitar el vinculo con su propia inmobiliaria
+            if (!inmobiliariaID) {
+                await constructora.DesvincularInmobiliaria(inmoAdmin);
+            }
+        } else {
         const actuales = await constructora.ListarInmobiliariasVinculadas();
         for (const a of actuales) {
             await constructora.DesvincularInmobiliaria(a.inmobiliariaID);
         }
         if (inmobiliariaID) {
             await constructora.VincularInmobiliaria(Number(inmobiliariaID));
+        }
         }
         }
 
@@ -289,6 +363,11 @@ export const putConstructora = async (ctx: RouterContext<string>) => {
         message: "Constructora actualizada correctamente",
         };
     } catch (error) {
+        if (error instanceof ScopeError) {
+            response.status = error.status;
+            response.body = { success: false, message: error.message };
+            return;
+        }
         console.error("ERROR AL ACTUALIZAR CONSTRUCTORA:", error);
         response.status = 500;
         response.body = {
@@ -358,12 +437,24 @@ export const deleteConstructora = async (ctx: RouterContext<string>) => {
                 return;
             }
 
+            // El administrador solo puede vincular con SU inmobiliaria
+            const inmoAdmin = await inmobiliariaDelAdmin(ctx);
+            if (inmoAdmin !== null && inmobiliariaID !== inmoAdmin) {
+                denegarAjena(ctx);
+                return;
+            }
+
             const constructora = new Constructora(null, id);
             await constructora.VincularInmobiliaria(inmobiliariaID);
 
             response.status = 201;
             response.body = { success: true, message: "Constructora vinculada correctamente" };
         } catch (error) {
+            if (error instanceof ScopeError) {
+                response.status = error.status;
+                response.body = { success: false, message: error.message };
+                return;
+            }
             console.error("ERROR AL VINCULAR INMOBILIARIA:", error);
             response.status = 500;
             response.body = { success: false, message: "Error al vincular la inmobiliaria" };
@@ -388,12 +479,24 @@ export const deleteConstructora = async (ctx: RouterContext<string>) => {
                 return;
             }
 
+            // El administrador solo puede desvincular de SU inmobiliaria
+            const inmoAdmin = await inmobiliariaDelAdmin(ctx);
+            if (inmoAdmin !== null && inmobiliariaID !== inmoAdmin) {
+                denegarAjena(ctx);
+                return;
+            }
+
             const constructora = new Constructora(null, id);
             await constructora.DesvincularInmobiliaria(inmobiliariaID);
 
             response.status = 200;
             response.body = { success: true, message: "Constructora desvinculada correctamente" };
         } catch (error) {
+            if (error instanceof ScopeError) {
+                response.status = error.status;
+                response.body = { success: false, message: error.message };
+                return;
+            }
             console.error("ERROR AL DESVINCULAR INMOBILIARIA:", error);
             response.status = 500;
             response.body = { success: false, message: "Error al desvincular la inmobiliaria" };
@@ -415,10 +518,17 @@ export const getConstructorasPublicas = async (ctx: Context) => {
 export const getInmobiliarias = async (ctx: Context) => {
     try {
         const modelo = new Constructora();
-        const data = await modelo.SeleccionarInmobiliarias();
+        // El administrador solo ve SU inmobiliaria (no el listado de las demas)
+        const inmoAdmin = await inmobiliariaDelAdmin(ctx);
+        const data = await modelo.SeleccionarInmobiliarias(inmoAdmin ?? undefined);
         ctx.response.status = 200;
         ctx.response.body = { success: true, data };
     } catch (error) {
+        if (error instanceof ScopeError) {
+            ctx.response.status = error.status;
+            ctx.response.body = { success: false, message: error.message };
+            return;
+        }
         console.error("ERROR AL LISTAR INMOBILIARIAS:", error);
         ctx.response.status = 500;
         ctx.response.body = {

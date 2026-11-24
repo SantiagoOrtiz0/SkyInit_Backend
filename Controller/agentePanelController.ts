@@ -27,11 +27,21 @@ function parsePropiedadID(raw: string | undefined): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
+// La propiedad debe estar asignada al agente Y pertenecer a su inmobiliaria
 async function propiedadPerteneceAlAgente(
   propiedadID: number,
   agenteID: number,
+  inmobiliariaID: number | null | undefined,
 ): Promise<boolean> {
-  return await new Propiedad(null, propiedadID).PerteneceAAgente(agenteID);
+  if (!inmobiliariaID) return false;
+  const propiedad = new Propiedad(null, propiedadID);
+  return (await propiedad.PerteneceAAgente(agenteID)) &&
+    (await propiedad.PerteneceAInmobiliaria(inmobiliariaID));
+}
+
+function getInmobiliariaID(ctx: Context): number | null {
+  return (ctx.state as { inmobiliariaID?: number | null }).inmobiliariaID ??
+    null;
 }
 
 const ESTADOS_VALIDOS = [
@@ -93,6 +103,7 @@ export const verDetallePropiedad = async (ctx: Context): Promise<void> => {
     const esPropietario = await propiedadPerteneceAlAgente(
       propiedadID,
       agenteID,
+      getInmobiliariaID(ctx),
     );
 
     if (!esPropietario) {
@@ -145,6 +156,7 @@ export const editarMiPropiedad = async (ctx: Context): Promise<void> => {
     const esPropietario = await propiedadPerteneceAlAgente(
       propiedadID,
       agenteID,
+      getInmobiliariaID(ctx),
     );
     if (!esPropietario) {
       const existe = await new Propiedad(null, propiedadID).ConsultarPropiedad(
@@ -282,6 +294,7 @@ export const subirImagenMiPropiedad = async (ctx: Context): Promise<void> => {
     const esPropietario = await propiedadPerteneceAlAgente(
       propiedadID,
       agenteID,
+      getInmobiliariaID(ctx),
     );
     if (!esPropietario) {
       ctx.response.status = 403;
@@ -352,6 +365,7 @@ export const eliminarImagenMiPropiedad = async (
     const esPropietario = await propiedadPerteneceAlAgente(
       propiedadID,
       agenteID,
+      getInmobiliariaID(ctx),
     );
     if (!esPropietario) {
       ctx.response.status = 403;

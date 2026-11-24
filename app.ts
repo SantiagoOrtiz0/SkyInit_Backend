@@ -15,6 +15,8 @@ import { superadminRouter } from "./Router/superadmin.ts";
 import { solicitudesInmobiliariaRouter } from "./Router/solicitudesInmobiliariaRouter.ts";
 import { agentePanelRouter }          from "./Router/agentePanelRouter.ts";
 import dashboardRouter from "./Router/dashboardRouter.ts";
+import { funcionesRouter } from "./Router/funcionesRouter.ts";
+import { iniciarRecordatorios } from "./services/recordatorios.ts";
 
 const app = new Application();
 
@@ -52,7 +54,8 @@ const routes = [
     superadminRouter,
     solicitudesInmobiliariaRouter,
     agentePanelRouter,  
-    dashboardRouter,      
+    dashboardRouter,
+    funcionesRouter,
 ];
 
 routes.forEach(router => {
@@ -60,5 +63,6 @@ routes.forEach(router => {
     app.use(router.allowedMethods());
 });
 
+iniciarRecordatorios();
 console.log("Servidor corriendo por el puerto 8001");
 app.listen({ port: 8001 });

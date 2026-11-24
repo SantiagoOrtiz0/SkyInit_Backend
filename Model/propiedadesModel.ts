@@ -34,7 +34,16 @@ interface PropiedadData {
     | "En mantenimiento"
     | "Fuera del mercado";
   destacada?: boolean;
+  // decimal(10,7) como string; null borra; undefined no se toca al actualizar
+  latitud?: string | null;
+  longitud?: string | null;
 }
+
+// Las columnas decimal llegan como string: se devuelven como numero (o null)
+const coord = (v: string | null) => (v === null ? null : Number(v));
+const conCoordenadas = <T extends { latitud: string | null; longitud: string | null }>(
+  f: T,
+) => ({ ...f, latitud: coord(f.latitud), longitud: coord(f.longitud) });
 
 interface FiltrosPropiedad {
   ciudad?: string;
@@ -75,6 +84,8 @@ export class Propiedad {
       agenteNombre: usuarios.nombre,
       constructoraID: propiedades.constructoraID,
       constructoraNombre: constructoras.nombre,
+      latitud: propiedades.latitud,
+      longitud: propiedades.longitud,
     })
       .from(propiedades)
       .leftJoin(
@@ -88,7 +99,7 @@ export class Propiedad {
       )
       .orderBy(desc(propiedades.fechaPublicacion));
 
-    return await this.AdjuntarImagenPrincipal(filas);
+    return await this.AdjuntarImagenPrincipal(filas.map(conCoordenadas));
   }
 
   public async ConsultarPropiedad(soloDisponibles = true) {
@@ -108,6 +119,8 @@ export class Propiedad {
       agenteID: propiedades.agenteID,
       constructoraID: propiedades.constructoraID,
       constructoraNombre: constructoras.nombre,
+      latitud: propiedades.latitud,
+      longitud: propiedades.longitud,
     })
       .from(propiedades)
       .innerJoin(
@@ -157,7 +170,13 @@ export class Propiedad {
       .from(imagenespropiedad)
       .where(eq(imagenespropiedad.propiedadID, this._idPropiedad!));
 
-    return { ...propiedad, agenteNombre, agenteTelefono, agenteFoto, imagenes };
+    return {
+      ...conCoordenadas(propiedad),
+      agenteNombre,
+      agenteTelefono,
+      agenteFoto,
+      imagenes,
+    };
   }
 
   public async SeleccionarPropiedades(filtros: FiltrosPropiedad = {}) {
@@ -314,6 +333,8 @@ export class Propiedad {
       estado: propiedad.estado ?? "Disponible",
       destacada: propiedad.destacada ? 1 : 0,
       inmobiliariaID: propiedad.inmobiliariaID ?? null,
+      latitud: propiedad.latitud ?? null,
+      longitud: propiedad.longitud ?? null,
     });
     return Number((resultado as { insertId?: number }).insertId ?? 0);
   }
@@ -336,6 +357,9 @@ export class Propiedad {
         destacada: propiedad.destacada === undefined
           ? undefined
           : (propiedad.destacada ? 1 : 0),
+        // undefined = no se toca; null = borra la ubicacion
+        latitud: propiedad.latitud,
+        longitud: propiedad.longitud,
         // inmobiliariaID no se toca
       })
       .where(eq(propiedades.propiedadID, this._idPropiedad!));
@@ -434,6 +458,8 @@ export class Propiedad {
       agenteNombre: usuarios.nombre,
       constructoraID: propiedades.constructoraID,
       constructoraNombre: constructoras.nombre,
+      latitud: propiedades.latitud,
+      longitud: propiedades.longitud,
     })
       .from(propiedades)
       .leftJoin(
@@ -448,7 +474,7 @@ export class Propiedad {
       .where(eq(propiedades.inmobiliariaID, inmobiliariaID))
       .orderBy(desc(propiedades.fechaPublicacion));
 
-    return await this.AdjuntarImagenPrincipal(filas);
+    return await this.AdjuntarImagenPrincipal(filas.map(conCoordenadas));
   }
 
   public async PerteneceAInmobiliaria(

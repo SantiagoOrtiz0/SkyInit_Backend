@@ -63,6 +63,8 @@ export const usuarios = mysqlTable("usuarios", {
     fotoPerfil: varchar("FotoPerfil", {length: 255}),
     aceptoTerminos: tinyint("AceptoTerminos").notNull().default(0),
     fechaAceptacionTerminos: datetime("FechaAceptacionTerminos"),
+    // Solo para el rol Trabajador: constructora a la que pertenece (FK definida en la migracion 001)
+    constructoraID: int("ConstructoraID"),
 });
 
 export const constructoras = mysqlTable("constructoras", {
@@ -103,6 +105,8 @@ export const propiedades = mysqlTable("propiedades", {
         estado: varchar("Estado", {length: 20}).notNull().default("Disponible"), // Estado disponible, reservada, en mantenimiento y fuera del mercado
         destacada: tinyint("Destacada").notNull().default(0),
         fechaPublicacion: datetime("FechaPublicacion").notNull().default(sql`CURRENT_TIMESTAMP`),
+        latitud: decimal("Latitud", {precision: 10, scale: 7}),
+        longitud: decimal("Longitud", {precision: 10, scale: 7}),
 });
 
 export const proyectos = mysqlTable("proyectos", {
@@ -127,6 +131,8 @@ export const proyectos = mysqlTable("proyectos", {
     }),
     descripcion: varchar("Descripcion", {length: 500}),
     ubicacion: varchar("Ubicacion", {length: 255}),
+    latitud: decimal("Latitud", {precision: 10, scale: 7}),
+    longitud: decimal("Longitud", {precision: 10, scale: 7}),
 });
 
 export const avancesproyecto = mysqlTable("avancesproyecto", {
@@ -151,13 +157,19 @@ export const avancesproyecto = mysqlTable("avancesproyecto", {
 
 export const agendas = mysqlTable("agendas", {
     agendaID: int("AgendaID").autoincrement().primaryKey(),
-    usuarioID: int("UsuarioID").notNull()
-    .references(() => usuarios.usuarioID, {onDelete: "cascade"}),
+    usuarioID: int("UsuarioID")
+    .references(() => usuarios.usuarioID, {onDelete: "cascade"}), // null: cliente sin cuenta (cita creada por el agente)
     propiedadID: int("PropiedadID").notNull().references(() =>
         propiedades.propiedadID, {onDelete: "cascade"}),
+    agenteID: int("AgenteID"),
+    clienteNombre: varchar("ClienteNombre", {length: 100}),
+    clienteContacto: varchar("ClienteContacto", {length: 100}),
+    recordatorioEnviado: tinyint("RecordatorioEnviado").notNull().default(0),
     fechaVisita: datetime("FechaVisita").notNull(),
     estadoAgendaID: int("EstadoAgendaID").notNull().references(() =>
     estadosagenda.estadoAgendaID),
+    notas: varchar("Notas", {length: 300}),
+    fechaCreacion: datetime("FechaCreacion").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
 
@@ -165,8 +177,9 @@ export const calificaciones = mysqlTable("calificaciones", {
     calificacionID: int("CalificacionID").autoincrement().primaryKey(),
     usuarioID: int("UsuarioID").notNull().
     references(() => usuarios.usuarioID, {onDelete: "cascade"}),
-    propiedadID: int("PropiedadID").notNull()
+    propiedadID: int("PropiedadID")
     .references(() => propiedades.propiedadID, {onDelete: "cascade"}),
+    servicioID: int("ServicioID"),
     puntaje: tinyint("Puntaje").notNull(), //Valor entre 1 y 5
     fechaCalificacion: datetime("FechaCalificacion").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -175,8 +188,9 @@ export const comentarios = mysqlTable("comentarios", {
     comentarioID: int("ComentarioID").autoincrement().primaryKey(),
     usuarioID: int("UsuarioID").notNull().
     references(() => usuarios.usuarioID, {onDelete: "cascade"}),
-    propiedadID: int("PropiedadID").notNull().references(() => 
+    propiedadID: int("PropiedadID").references(() => 
     propiedades.propiedadID, {onDelete: "cascade"}),
+    servicioID: int("ServicioID"),
     contenido: text("Contenido").notNull(),
     fechaComentario: datetime("FechaComentario").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -340,6 +354,8 @@ export const serviciossolicitados = mysqlTable("serviciossolicitados", {
   estadoReparacionID: int("EstadoReparacionID").references(
     () => estadosreparacion.estadoReparacionID,
   ),
+  constructoraID: int("ConstructoraID"),
+  fechaReenvio: datetime("FechaReenvio"),
 });
 
 export const reparaciones = mysqlTable("reparaciones", {
@@ -365,6 +381,8 @@ export const passwordresettokens = mysqlTable("passwordresettokens", {
     .notNull()
     .references(() => usuarios.usuarioID, { onDelete: "cascade" }),
   token: varchar("Token", { length: 255 }).notNull(),
+  tipo: varchar("Tipo", { length: 10 }).notNull().default("token"),
+  intentos: int("Intentos").notNull().default(0),
   expirationDate: datetime("ExpirationDate").notNull(),
 });
 
@@ -399,3 +417,61 @@ export const constructorasInmobiliarias = mysqlTable("constructoras_inmobiliaria
     fechaVinculacion: datetime("FechaVinculacion").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+// ── Organizacion del proyecto (etapas y tareas) y seguimiento ─────────────────
+
+export const etapasproyecto = mysqlTable("etapasproyecto", {
+    etapaID: int("EtapaID").autoincrement().primaryKey(),
+    proyectoID: int("ProyectoID").notNull().references(() => proyectos.proyectoID, {onDelete: "cascade"}),
+    nombre: varchar("Nombre", {length: 120}).notNull(),
+    orden: int("Orden").notNull().default(0),
+    fechaInicio: date("FechaInicio"),
+    fechaFin: date("FechaFin"),
+});
+
+export const tareasproyecto = mysqlTable("tareasproyecto", {
+    tareaID: int("TareaID").autoincrement().primaryKey(),
+    proyectoID: int("ProyectoID").notNull().references(() => proyectos.proyectoID, {onDelete: "cascade"}),
+    etapaID: int("EtapaID").notNull().references(() => etapasproyecto.etapaID, {onDelete: "cascade"}),
+    titulo: varchar("Titulo", {length: 150}).notNull(),
+    descripcion: text("Descripcion"),
+    asignadoA: int("AsignadoA").references(() => usuarios.usuarioID, {onDelete: "set null"}),
+    estado: varchar("Estado", {length: 20}).notNull().default("Pendiente"), // Pendiente | En progreso | Completada
+    prioridad: varchar("Prioridad", {length: 10}).notNull().default("Media"), // Baja | Media | Alta
+    fechaLimite: date("FechaLimite"),
+    fechaCreacion: datetime("FechaCreacion").notNull().default(sql`CURRENT_TIMESTAMP`),
+    fechaCompletada: datetime("FechaCompletada"),
+});
+
+export const seguimientotareas = mysqlTable("seguimientotareas", {
+    seguimientoID: int("SeguimientoID").autoincrement().primaryKey(),
+    tareaID: int("TareaID").notNull().references(() => tareasproyecto.tareaID, {onDelete: "cascade"}),
+    usuarioID: int("UsuarioID").notNull().references(() => usuarios.usuarioID, {onDelete: "cascade"}),
+    comentario: text("Comentario").notNull(),
+    estadoNuevo: varchar("EstadoNuevo", {length: 20}),
+    fecha: datetime("Fecha").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+// ── Mantenimiento (inmobiliaria -> constructora -> trabajadores) y metricas de interes ──
+
+export const trabajadoressolicitud = mysqlTable("trabajadoressolicitud", {
+    solicitudID: int("SolicitudID").notNull(),
+    trabajadorID: int("TrabajadorID").notNull(),
+    fechaAsignacion: datetime("FechaAsignacion").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const historialsolicitud = mysqlTable("historialsolicitud", {
+    historialID: int("HistorialID").autoincrement().primaryKey(),
+    solicitudID: int("SolicitudID").notNull(),
+    usuarioID: int("UsuarioID"),
+    comentario: text("Comentario").notNull(),
+    estadoReparacionID: int("EstadoReparacionID"),
+    fecha: datetime("Fecha").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const interespropiedad = mysqlTable("interespropiedad", {
+    interesID: int("InteresID").autoincrement().primaryKey(),
+    propiedadID: int("PropiedadID").notNull(),
+    usuarioID: int("UsuarioID"),
+    tipo: varchar("Tipo", {length: 20}).notNull(), // vista | mapa
+    fecha: datetime("Fecha").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
