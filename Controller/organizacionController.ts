@@ -1,7 +1,10 @@
 // deno-lint-ignore-file no-explicit-any
 import { and, asc, bcrypt, desc, eq, inArray, sql } from "../Dependencies/dependencias.ts";
 import { db } from "../Model/conexion.ts";
-import { constructoras, etapasproyecto, proyectos, seguimientotareas, tareasproyecto, usuarios } from "../Model/schema.ts";
+import {
+  constructoras, estadosreparacion, etapasproyecto, propiedades, proyectos, seguimientotareas,
+  serviciosmantenimiento, serviciossolicitados, tareasproyecto, trabajadoressolicitud, usuarios,
+} from "../Model/schema.ts";
 import { notificar } from "../services/notificaciones.ts";
 
 /**
@@ -426,5 +429,116 @@ export async function dashboardTrabajador(ctx: any) {
       vencidas: abiertas.filter((t) => t.fechaLimite && new Date(t.fechaLimite) < hoy).length,
     },
     tareas,
+  };
+}
+
+// GET /api/trabajador/grupo
+export async function grupoTrabajador(ctx: any) {
+  const id = usuarioId(ctx);
+  const [yo] = await db.select({
+    usuarioID: usuarios.usuarioID,
+    nombre: usuarios.nombre,
+    estado: usuarios.estadoCuenta,
+    constructoraID: usuarios.constructoraID,
+  }).from(usuarios).where(and(eq(usuarios.usuarioID, id), eq(usuarios.rolID, ROL_TRABAJADOR))).limit(1);
+  if (!yo) return error(ctx, 403, "Esta cuenta no es de trabajador");
+
+  let constructora: any = null;
+  let supervisor: any = null;
+  let integrantes: any[] = [];
+
+  if (yo.constructoraID) {
+    const [c] = await db.select({
+      constructoraID: constructoras.constructoraID,
+      nombre: constructoras.nombre,
+      ciudad: constructoras.ciudad,
+      telefono: constructoras.telefono,
+      correo: constructoras.correo,
+      usuarioID: constructoras.usuarioID,
+    }).from(constructoras).where(eq(constructoras.constructoraID, yo.constructoraID)).limit(1);
+    if (c) {
+      constructora = {
+        constructoraID: c.constructoraID,
+        nombre: c.nombre,
+        ciudad: c.ciudad,
+        telefono: c.telefono,
+        correo: c.correo,
+      };
+      if (c.usuarioID) {
+        const [sup] = await db.select({
+          usuarioID: usuarios.usuarioID,
+          nombre: usuarios.nombre,
+          correo: usuarios.correo,
+          telefono: usuarios.telefono,
+        }).from(usuarios).where(eq(usuarios.usuarioID, c.usuarioID)).limit(1);
+        if (sup) supervisor = sup;
+      }
+    }
+
+    const lista = await db.select({
+      usuarioID: usuarios.usuarioID,
+      nombre: usuarios.nombre,
+      correo: usuarios.correo,
+      telefono: usuarios.telefono,
+      fotoPerfil: usuarios.fotoPerfil,
+      estadoCuenta: usuarios.estadoCuenta,
+    }).from(usuarios)
+      .where(and(eq(usuarios.rolID, ROL_TRABAJADOR), eq(usuarios.constructoraID, yo.constructoraID), eq(usuarios.estadoCuenta, "Activa")))
+      .orderBy(asc(usuarios.nombre));
+    integrantes = lista.map((t) => ({ ...t, rol: "Trabajador", esYo: t.usuarioID === id }));
+  }
+
+  const mias = await db.select({
+    solicitudID: trabajadoressolicitud.solicitudID,
+    fechaAsignacion: trabajadoressolicitud.fechaAsignacion,
+  }).from(trabajadoressolicitud).where(eq(trabajadoressolicitud.trabajadorID, id));
+
+  let asignaciones: any[] = [];
+  if (mias.length) {
+    const ids = mias.map((m) => m.solicitudID);
+    const fechaPorId = new Map(mias.map((m) => [m.solicitudID, m.fechaAsignacion]));
+    const sols = await db.select({
+      solicitudID: serviciossolicitados.solicitudID,
+      servicio: serviciosmantenimiento.nombre,
+      estado: estadosreparacion.descripcion,
+      estadoReparacionID: serviciossolicitados.estadoReparacionID,
+      propiedad: propiedades.titulo,
+      ciudad: propiedades.ciudad,
+      fechaSolicitud: serviciossolicitados.fechaSolicitud,
+    }).from(serviciossolicitados)
+      .innerJoin(serviciosmantenimiento, eq(serviciossolicitados.servicioID, serviciosmantenimiento.servicioID))
+      .leftJoin(estadosreparacion, eq(serviciossolicitados.estadoReparacionID, estadosreparacion.estadoReparacionID))
+      .leftJoin(propiedades, eq(serviciossolicitados.propiedadID, propiedades.propiedadID))
+      .where(inArray(serviciossolicitados.solicitudID, ids))
+      .orderBy(desc(serviciossolicitados.fechaSolicitud));
+
+    const compas = await db.select({
+      solicitudID: trabajadoressolicitud.solicitudID,
+      usuarioID: usuarios.usuarioID,
+      nombre: usuarios.nombre,
+      telefono: usuarios.telefono,
+    }).from(trabajadoressolicitud)
+      .innerJoin(usuarios, eq(trabajadoressolicitud.trabajadorID, usuarios.usuarioID))
+      .where(inArray(trabajadoressolicitud.solicitudID, ids));
+
+    asignaciones = sols.map((s) => ({
+      ...s,
+      fechaAsignacion: fechaPorId.get(s.solicitudID) ?? null,
+      integrantes: compas.filter((c) => c.solicitudID === s.solicitudID).map(({ solicitudID: _id, ...c }) => ({
+        ...c,
+        esYo: c.usuarioID === id,
+      })),
+    }));
+  }
+
+  ctx.response.body = {
+    equipo: {
+      nombre: constructora ? `Cuadrilla ${constructora.nombre}` : "Sin cuadrilla asignada",
+      rol: "Trabajador",
+      constructora,
+      supervisor,
+    },
+    integrantes,
+    asignaciones,
   };
 }

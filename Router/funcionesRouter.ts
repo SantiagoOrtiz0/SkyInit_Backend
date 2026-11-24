@@ -16,7 +16,7 @@ import {
 import { limitar } from "../Middlewares/rateLimit.ts";
 import { cambiarPassword, resumenCuenta } from "../Controller/cuentaController.ts";
 import { editablesMapa, galeria, puntosMapa, ubicarPropiedad, ubicarProyecto } from "../Controller/geoGaleriaController.ts";
-import { cambiarEstadoTrabajador, crearTrabajador, listarTrabajadores } from "../Controller/organizacionController.ts";
+import { cambiarEstadoTrabajador, crearTrabajador, grupoTrabajador, listarTrabajadores } from "../Controller/organizacionController.ts";
 
 /** Funciones nuevas (nov 2026): notificaciones, agenda, galeria, geolocalizacion, organizacion, seguimiento, trabajador */
 const funcionesRouter = new Router();
@@ -65,6 +65,7 @@ funcionesRouter
   .get("/api/mantenimiento/trabajador", authMiddleware, rolMiddleware("Trabajador"), trabajosTrabajador)
   .post("/api/mantenimiento/trabajador/:id/avance", authMiddleware, rolMiddleware("Trabajador"), registrarAvanceTrabajo)
   .get("/api/mantenimiento/:id/historial", authMiddleware, historialSolicitud)
+  .get("/api/trabajador/grupo", authMiddleware, rolMiddleware("Trabajador"), grupoTrabajador)
 
   // Galeria de fotos y mapa (publicos)
   .get("/api/galeria", galeria)
