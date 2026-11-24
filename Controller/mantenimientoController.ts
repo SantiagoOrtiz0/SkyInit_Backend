@@ -193,13 +193,22 @@ export async function asignarTrabajadores(ctx: any) {
 // ── Trabajador ───────────────────────────────────────────────────────────────
 // GET /api/mantenimiento/trabajador
 export async function trabajosTrabajador(ctx: any) {
-  const mias = await db.select({ id: trabajadoressolicitud.solicitudID }).from(trabajadoressolicitud)
+  const mias = await db.select({
+    id: trabajadoressolicitud.solicitudID,
+    fechaAsignacion: trabajadoressolicitud.fechaAsignacion,
+  }).from(trabajadoressolicitud)
     .where(eq(trabajadoressolicitud.trabajadorID, usuarioId(ctx)));
   if (!mias.length) { ctx.response.body = { trabajos: [] }; return; }
+  const asignacionPorId = new Map(mias.map((m) => [m.id, m.fechaAsignacion]));
   const lista = await consulta().where(inArray(serviciossolicitados.solicitudID, mias.map((m) => m.id)))
     .orderBy(desc(serviciossolicitados.fechaReenvio));
   // El trabajador no necesita el correo del cliente
-  ctx.response.body = { trabajos: (await conTrabajadores(lista)).map(({ clienteCorreo: _c, ...t }) => t) };
+  ctx.response.body = {
+    trabajos: (await conTrabajadores(lista)).map(({ clienteCorreo: _c, ...t }) => ({
+      ...t,
+      fechaAsignacion: asignacionPorId.get(t.solicitudID) ?? null,
+    })),
+  };
 }
 
 // POST /api/mantenimiento/trabajador/:id/avance  { comentario, estadoReparacionID?: 2 | 3 }

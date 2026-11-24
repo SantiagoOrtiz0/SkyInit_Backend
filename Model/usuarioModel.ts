@@ -1,5 +1,5 @@
 import { db } from "./conexion.ts";
-import { usuarios, roles, favoritos, propiedades, imagenespropiedad, serviciossolicitados, serviciosmantenimiento, inmobiliarias, estadosreparacion } from "./schema.ts";
+import { usuarios, roles, favoritos, propiedades, imagenespropiedad, serviciossolicitados, serviciosmantenimiento, inmobiliarias, estadosreparacion, constructoras } from "./schema.ts";
 import { eq, sql } from "../Dependencies/dependencias.ts";
 
 export interface UsuarioCreate {
@@ -55,10 +55,13 @@ export async function buscarPorId(id: number) {
         fechaRegistro: usuarios.fechaRegistro,
         aceptoTerminos: usuarios.aceptoTerminos,
         contrasenaHash: usuarios.contrasenaHash,
-        inmobiliariaID: usuarios.inmobiliariaID
+        inmobiliariaID: usuarios.inmobiliariaID,
+        constructoraID: usuarios.constructoraID,
+        constructoraNombre: constructoras.nombre,
     })
     .from(usuarios)
     .innerJoin(roles, eq(usuarios.rolID, roles.rolID))
+    .leftJoin(constructoras, eq(usuarios.constructoraID, constructoras.constructoraID))
     .where(eq(usuarios.usuarioID, id))
     .limit(1);
 
