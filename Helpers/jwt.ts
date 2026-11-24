@@ -9,7 +9,7 @@ if (secret.length < 32) {
 const server = Deno.env.get("SERVER");
 const IS_PROD = Deno.env.get("ENV") === "production";
 
-const TOKEN_EXPIRY_SECONDS = 60 * 60;
+const TOKEN_EXPIRY_SECONDS = 60 * 60 * 8;
 export const COOKIE_NAME = "skyinit_token";
 
 export const crearToken = async (userId: number, rol: string): Promise<string> => {

@@ -1,4 +1,4 @@
-import { mysqlTable, int, varchar, text, decimal, datetime, date, tinyint, sql } from "../Dependencies/dependencias.ts";
+import { mysqlTable, int, varchar, text, decimal, datetime, date, tinyint, sql, primaryKey } from "../Dependencies/dependencias.ts";
 
 // Catalogo
 
@@ -77,7 +77,7 @@ export const constructoras = mysqlTable("constructoras", {
     contacto: varchar("Contacto", {length: 100}),
     telefono: varchar("Telefono", {length: 20}),
     correo: varchar("Correo", {length: 100}),
-    estado: varchar("Estado", {length: 255}).default("Pendiente"),
+    estado: varchar("Estado", { length: 20 }).default("Pendiente"),
     logo: varchar("Logo", {length: 255}),
     descripcion: varchar("Descripcion", {length: 300}).notNull(),
     ciudad: varchar("Ciudad", {length: 255}),
@@ -415,7 +415,9 @@ export const constructorasInmobiliarias = mysqlTable("constructoras_inmobiliaria
     inmobiliariaID: int("InmobiliariaID").notNull()
         .references(() => inmobiliarias.inmobiliariaID, { onDelete: "cascade" }),
     fechaVinculacion: datetime("FechaVinculacion").notNull().default(sql`CURRENT_TIMESTAMP`),
-});
+}, (t) => ({
+  pk: primaryKey({ columns: [t.constructoraID, t.inmobiliariaID] }),
+}));
 
 // ── Organizacion del proyecto (etapas y tareas) y seguimiento ─────────────────
 

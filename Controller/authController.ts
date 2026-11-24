@@ -7,8 +7,6 @@ import { enviarCorreoRecuperarPassword, enviarCorreoBienvenida } from "../servic
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import {  actualizarFotoPerfil } from "../Model/usuarioModel.ts";
 
-
-
 // ---REGISTRO---
 export async function registro (ctx: Context) {
     try {
