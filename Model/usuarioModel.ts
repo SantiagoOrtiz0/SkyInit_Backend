@@ -65,6 +65,17 @@ export async function buscarPorId(id: number) {
     return resultado[0] ?? null;
 }
 
+/** true si el usuario es un Agente (rol 2) de alguna de las inmobiliarias indicadas */
+export async function esAgenteDeInmobiliaria(usuarioID: number, inmobiliariaIDs: number[]): Promise<boolean> {
+    if (!Number.isInteger(usuarioID) || usuarioID <= 0) return false;
+    const [u] = await db
+        .select({ rolID: usuarios.rolID, inmobiliariaID: usuarios.inmobiliariaID })
+        .from(usuarios)
+        .where(eq(usuarios.usuarioID, usuarioID))
+        .limit(1);
+    return !!u && u.rolID === 2 && u.inmobiliariaID != null && inmobiliariaIDs.includes(u.inmobiliariaID);
+}
+
 /** Verificar si un correo ya está registrado */
 export async function correoExiste(correo: string): Promise<boolean> {
     const resultado = await db

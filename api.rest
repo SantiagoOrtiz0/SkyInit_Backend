@@ -9,8 +9,8 @@ Content-Type: application/json
 {
     "Nombre": "Geovany",
     "Correo": "andriu.geova@gmail.com",
-    "Password": "#SkyInit2026",
-    "Confirmar": "#SkyInit2026",
+    "Password": "{{$dotenv TEST_PASSWORD}}",
+    "Confirmar": "{{$dotenv TEST_PASSWORD}}",
     "Telefono": "2121212122"
 }
 ### Login
@@ -19,7 +19,7 @@ Content-Type: application/json
 
 {
     "Correo": "silvia@gmail.com",
-    "Password": "12345678"
+    "Password": "{{$dotenv TEST_PASSWORD}}"
 }
 
 ###
@@ -28,7 +28,7 @@ Content-Type: application/json
 
 {
   "Correo": "skyinit2026@gmail.com",
-  "Password": "#SkyInit2026"
+  "Password": "{{$dotenv TEST_PASSWORD}}"
 }
 ### Logout
 POST http://localhost:8001//auth/logout
@@ -36,14 +36,14 @@ Content-Type: application/json
 
 {
     "Correo": "jeffry@gmail.com",
-    "Password": "12345678"
+    "Password": "{{$dotenv TEST_PASSWORD}}"
 }
 ### 
 GET http://localhost:8001/auth/perfil
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiJlZGYxMTBkOC04YzNmLTRiZGQtOTI2OS1jYzZmMWQ3NDA4NzciLCJleHAiOjE3OTAxMTQ0Mzh9.tZz1kBdvYzM7A9q3YA_lI6IBF7n7sQQg9oG0u2-zC5E
+Authorization: {{token}}
 ###
 POST http://localhost:8001/auth/logout
-Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsInJvbCI6IlVzdWFyaW8iLCJqdGkiOiI5NGE0NThiNi01Mzc4LTQyN2UtODljOC1lMjI3ZGI1Y2NiMTYiLCJleHAiOjE3OTAzNTk4NTF9.FLns2avVU9x_HGVmOFc-1_gbXs_SbpZjXUF-eIE_Fts
+Authorization: {{token}}
 
 ### Olvidé contraseña
 POST http://localhost:8001/auth/olvide-password
@@ -58,8 +58,8 @@ Content-Type: application/json
 
 {
   "Token": "358e2720-93e8-460a-b4f3-5d6d2fb8ff4a",
-  "Password": "NuevaContraseña123",
-  "Confirmar": "NuevaContraseña123"
+  "Password": "{{$dotenv TEST_PASSWORD}}",
+  "Confirmar": "{{$dotenv TEST_PASSWORD}}"
 }
 
 ### ____________________________________________________
@@ -113,8 +113,8 @@ Content-Type: application/json
 {
   "Nombre": "Constructora Test",
   "Correo": "constructora.test@skyinit.com",
-  "Password": "Test1234!",
-  "Confirmar": "Test1234!",
+  "Password": "{{$dotenv TEST_PASSWORD}}",
+  "Confirmar": "{{$dotenv TEST_PASSWORD}}",
   "Telefono": "3000000000"
 }
 
@@ -124,7 +124,7 @@ Content-Type: application/json
 
 {
   "Correo": "constructorajumper@gmail.com",
-  "Password": "#Skyinit2026"
+  "Password": "{{$dotenv TEST_PASSWORD}}"
 }
 
 ### Dashboard
@@ -132,7 +132,7 @@ GET http://localhost:8001/panel/constructora/dashboard
 
 ### Perfil
 GET http://localhost:8001/panel/constructora/perfil
-Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIxNyIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6ImY4NGRhYmQ3LTQ3N2QtNDkzNC1hOWQ5LTE3OWM3YzFlZGQxZCIsImV4cCI6MTc5MTQ5NjExNH0.h5bdVe4tMBbI-kMyDcuQH3v2aeXacqXO4X5LyVBOYy8
+Cookie: skyinit_token={{token}}
 
 ###
 GET http://localhost:8001/panel/constructora/proyectos
@@ -200,7 +200,7 @@ GET http://localhost:8001/proyectos/5/avances
 ### Crear Proyecto
 POST http://localhost:8001/proyectos
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZmMDNhMjZiLTJlYmYtNGRjOS05MGNiLTVjYWRjYzQ0Y2JlZiIsImV4cCI6MTc5MDI4NzEwNn0.g7BEK5DK8wDdBKqYYwsuFJA0Pa50oSIaKfzhn85AZYI
+Authorization: Bearer {{token}}
 
 {
 "nombre": "Torre San Lorenzo",
@@ -217,7 +217,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sI
 ### Editar Proyecto
 PUT http://localhost:8001/proyectos/17
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZmMDNhMjZiLTJlYmYtNGRjOS05MGNiLTVjYWRjYzQ0Y2JlZiIsImV4cCI6MTc5MDI4NzEwNn0.g7BEK5DK8wDdBKqYYwsuFJA0Pa50oSIaKfzhn85AZYI
+Authorization: Bearer {{token}}
 
 
 {
@@ -263,7 +263,7 @@ GET http://localhost:8001/api/servicios/1
 
 ###
 GET http://localhost:8001/panel/constructora/proyectos
-Cookie:  skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOSIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6IjI3NzU4MGU2LTliODctNGFlYi05ZTRjLWFkZjg1OWIxMWFkOCIsImV4cCI6MTc5MDkwMTYwMn0.7uIEhW_QHv1P-mnfSgd7FQ3IZYkWOb2D-unkc3mfOEM
+Cookie:  skyinit_token={{token}}
 
 ###
 POST http://localhost:8001/auth/login
@@ -271,30 +271,30 @@ Content-Type: application/json
 
 {
   "Correo": "constructora@gmail.com",
-  "Password": "NuevaContraseña123"
+  "Password": "{{$dotenv TEST_PASSWORD}}"
 }
 
 ###
 GET http://localhost:8001/panel/constructora/proyectos/5
-Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxOSIsInJvbCI6IkNvbnN0cnVjdG9yYSIsImp0aSI6IjI3NzU4MGU2LTliODctNGFlYi05ZTRjLWFkZjg1OWIxMWFkOCIsImV4cCI6MTc5MDkwMTYwMn0.7uIEhW_QHv1P-mnfSgd7FQ3IZYkWOb2D-unkc3mfOEM
+Cookie: skyinit_token={{token}}
 
 ###
 GET http://localhost:8001/inmobiliarias
-Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6ImIzMTc0NzRmLWE2ZmYtNDgyZS04YzhiLTAxMmY2ZDRhMmU2ZSIsImV4cCI6MTc5MTQxMDM1Nn0.qlIvoFPHbexKFfya5xW2Ho-sUXGa0WbXOxPDfIWOwMA
+Cookie: skyinit_token={{token}}
 ###
 GET http://localhost:8001/superadmin/usuarios
-Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIyMSIsInJvbCI6IlN1cGVyQWRtaW4iLCJqdGkiOiI3NWYyM2RiNy05NmFmLTQ1YzYtOTM0ZC0xZWQ2NWQ0MjYxODUiLCJleHAiOjE3OTE4MjIxNjN9.TmlpXmZOK1SZKdboxMayACZuFxVL8SfAC6fdr61Bit0
+Cookie: skyinit_token={{token}}
 ###
 GET http://localhost:8001/superadmin/inmobiliarias
-Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIyMSIsInJvbCI6IlN1cGVyQWRtaW4iLCJqdGkiOiJjOTVjNjUyNi0xNmQ4LTQxNjgtYTRiYy0yNTFmNmE3YjgyMWIiLCJleHAiOjE3OTE5MTgzOTl9.-L16tPd70FORvIla25tWpBNkCig7e58ITOjNCGaX0c8
+Cookie: skyinit_token={{token}}
 ###
 POST http://localhost:8001/auth/perfil/foto
 ###
 GET http://localhost:8001/superadmin/constructoras
-Cookie: skyinit_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiU3VwZXJBZG1pbiIsImp0aSI6IjI5NDE2M2Q4LTE2MGEtNDg2NS05NzFjLWM0YTU5ZDM1OTNhZSIsImV4cCI6MTc5MjAyODU4M30.2vp1A-wn4txLwLGJ0oQfB8GbZSc71fwsjISe1921lTc
+Cookie: skyinit_token={{token}}
 ###
 PUT http://localhost:8001/superadmin/constructoras/8
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiU3VwZXJBZG1pbiIsImp0aSI6IjI5NDE2M2Q4LTE2MGEtNDg2NS05NzFjLWM0YTU5ZDM1OTNhZSIsImV4cCI6MTc5MjAyODU4M30.2vp1A-wn4txLwLGJ0oQfB8GbZSc71fwsjISe1921lTc
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -310,15 +310,15 @@ Content-Type: application/json
 }
 ###
 GET http://localhost:8001/constructoras
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI0Iiwicm9sIjoiQWRtaW5pc3RyYWRvciIsImp0aSI6IjZjMTAwMDc4LWZjYmQtNDc2MS04MDZmLTdjZTRhM2Q3YzFmOCIsImV4cCI6MTc5MjEwMDIzNn0.oOVTxKuXCYIltp5O_DKkI_hRt39Bt2gtioR_pAm5dKU
+Authorization: Bearer {{token}}
 
 ###
 GET http://localhost:8001/agente/dashboard
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI3Iiwicm9sIjoiQWdlbnRlIiwianRpIjoiY2U3OWMwY2QtZWVhYy00MDVlLTlmNDctOGFhNjNkNDUzN2RiIiwiZXhwIjoxNzkyNDUwMzUxfQ.VxQAJzEN_lAUqhhHP9HlLmeiKJcdUNePiT50RqnjkbcD
+Authorization: Bearer {{token}}
 
 ###
 GET http://localhost:8001/superadmin/dashboard
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiI2Iiwicm9sIjoiU3VwZXJBZG1pbiIsImp0aSI6IjFjOTZlOTMzLTE2ZmEtNDIyZS1hNjYzLTEzYWVlM2RiYTlkMSIsImV4cCI6MTc5MjQ1MTY2Nn0.lsisDZ_vDSKuNwONQs1A9a9bIuozKiPCEIlfzJJ4cTY
+Authorization: Bearer {{token}}
 ###
 GET http://localhost:8001/api/propiedades/inmobiliaria/mis-propiedades
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwMDEiLCJzdWIiOiIxNSIsInJvbCI6IkFkbWluaXN0cmFkb3IiLCJqdGkiOiI3M2M1Mzc0Yi1kZjFmLTRiNWUtYWQzMS1jNDE0NjI2MmY1ZjgiLCJleHAiOjE3OTI2MTkzNDV9.M9XtMDldstZ5uIth4H4lTMtJiB6WfGtDckcl1fWKEjM
+Authorization: Bearer {{token}}

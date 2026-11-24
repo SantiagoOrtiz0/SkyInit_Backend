@@ -2,11 +2,10 @@ import { Context } from "../Dependencies/dependencias.ts";
 import { bcrypt } from "../Dependencies/dependencias.ts";
 import { CrearToken, setTokenCookie, clearTokenCookie } from "../Helpers/jwt.ts";
 import { buscarPorCorreo, buscarPorId, correoExiste, crearUsuario,} from "../Model/usuarioModel.ts";
-import { crearTokenReset,buscarTokenReset,borrarTokenReset,actualizarPassword } from "../Model/passwordResetModel.ts";
+import { crearCodigoReset, canjearCodigoPorToken, buscarTokenReset, borrarTokensUsuario, actualizarPassword, generarCodigo6 } from "../Model/passwordResetModel.ts";
 import { enviarCorreoRecuperarPassword, enviarCorreoBienvenida } from "../services/emailServices.ts";
 import { guardarImagen, eliminarImagenDisco } from "../Helpers/upload.ts";
 import {  actualizarFotoPerfil } from "../Model/usuarioModel.ts";
-import {buscarCodigoReset,generarCodigo6,} from "../Model/passwordResetModel.ts";
 
 // ---REGISTRO---
 export async function registro (ctx: Context) {
@@ -217,7 +216,7 @@ export async function olvidePassword(ctx: Context) {
     const codigo = generarCodigo6();
     // 15 minutos
     const expirationDate = new Date(Date.now() + 15 * 60 * 1000);
-    await crearTokenReset(usuario.usuarioID, codigo, expirationDate);
+    await crearCodigoReset(usuario.usuarioID, codigo, expirationDate);
 
     try {
       await enviarCorreoRecuperarPassword(
@@ -266,18 +265,13 @@ export async function verificarCodigo(ctx: Context) {
       return;
     }
 
-    const fila = await buscarCodigoReset(usuario.usuarioID, codigoLimpio);
-    if (!fila) {
+    // Valida el código (máx. 5 intentos) y lo cambia por un token de un solo uso
+    const token = await canjearCodigoPorToken(usuario.usuarioID, codigoLimpio);
+    if (!token) {
       ctx.response.status = 400;
       ctx.response.body = { error: "Código inválido o expirado" };
       return;
     }
-
-    // Invalidar el código y crear token UUID para la página de nueva contraseña
-    await borrarTokenReset(codigoLimpio);
-    const token = crypto.randomUUID();
-    const expirationDate = new Date(Date.now() + 15 * 60 * 1000);
-    await crearTokenReset(usuario.usuarioID, token, expirationDate);
 
     ctx.response.status = 200;
     ctx.response.body = {
@@ -330,7 +324,7 @@ export async function restablecerPassword(ctx: Context) {
 
     const hash = await bcrypt.hash(Password);
     await actualizarPassword(fila.userId, hash);
-    await borrarTokenReset(Token);
+    await borrarTokensUsuario(fila.userId);
 
     ctx.response.status = 200;
     ctx.response.body = {

@@ -2,12 +2,21 @@ import { Router } from "../Dependencies/dependencias.ts";
 import { listarProyectos, listarPorConstructora, consultarProyecto, listarSimilares, listarAvances, crearProyecto, editarProyecto, registrarAvance, eliminarProyecto, subirImagenProyecto, eliminarImagenProyecto, listarProyectosInmobiliaria } from "../Controller/proyectosController.ts";
 import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
 import { constructoraScopeMiddleware } from "../Middlewares/constructoraScope.ts";
-import { obtenerInmobiliariaScope } from "../Middlewares/inmobiliariasScope.ts";
+import { obtenerInmobiliariaScope, ScopeError } from "../Middlewares/inmobiliariasScope.ts";
 
 // Middleware puente que inyecta inmobiliariaID en ctx.state
 const inyectarScope = async (ctx: any, next: any) => {
-    const scope = await obtenerInmobiliariaScope(ctx);
-    ctx.state.inmobiliariaID = scope.inmobiliariaId;
+    try {
+        const scope = await obtenerInmobiliariaScope(ctx);
+        ctx.state.inmobiliariaID = scope.inmobiliariaId;
+    } catch (e) {
+        if (e instanceof ScopeError) {
+            ctx.response.status = e.status;
+            ctx.response.body = { error: e.message };
+            return;
+        }
+        throw e;
+    }
     await next();
 };
 

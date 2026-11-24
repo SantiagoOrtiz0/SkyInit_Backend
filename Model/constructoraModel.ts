@@ -233,6 +233,22 @@ export class Constructora {
             .where(eq(constructorasInmobiliarias.constructoraID, this._idConstructora!));
     }
 
+    // true si esta constructora esta vinculada a la inmobiliaria indicada
+    public async EstaVinculadaAInmobiliaria(inmobiliariaID: number): Promise<boolean> {
+        if (!this._idConstructora || !inmobiliariaID) return false;
+        const [fila] = await db
+            .select({ inmobiliariaID: constructorasInmobiliarias.inmobiliariaID })
+            .from(constructorasInmobiliarias)
+            .where(
+                and(
+                    eq(constructorasInmobiliarias.constructoraID, this._idConstructora),
+                    eq(constructorasInmobiliarias.inmobiliariaID, inmobiliariaID),
+                ),
+            )
+            .limit(1);
+        return !!fila;
+    }
+
     // Listar constructoras vinculadas a una inmobiliaria (para panel del admin)
     public async SeleccionarPorInmobiliaria(inmobiliariaID: number) {
         return await db
@@ -282,7 +298,8 @@ export class Constructora {
         .where(eq(constructoras.estado, "Activo"));
 }
 
-    public async SeleccionarInmobiliarias() {
+    // Sin argumento: todas (SuperAdmin). Con argumento: solo esa inmobiliaria.
+    public async SeleccionarInmobiliarias(soloInmobiliariaID?: number) {
         return await db
             .select({
             inmobiliariaID: inmobiliarias.inmobiliariaID,
@@ -290,7 +307,12 @@ export class Constructora {
             ciudad: inmobiliarias.ciudad,
             estado: inmobiliarias.estado,
             })
-            .from(inmobiliarias);
+            .from(inmobiliarias)
+            .where(
+                soloInmobiliariaID === undefined
+                    ? undefined
+                    : eq(inmobiliarias.inmobiliariaID, soloInmobiliariaID),
+            );
     }
     public async ListarInmobiliariasConNombre() {
         return await db

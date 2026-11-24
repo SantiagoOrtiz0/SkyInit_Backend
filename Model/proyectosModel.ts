@@ -12,7 +12,15 @@ interface ProyectoData {
     descripcion?: string | null;
     ubicacion?: string | null;
     inmobiliariaID?: number | null;
+    // decimal(10,7) como string; null borra; undefined no se toca al actualizar
+    latitud?: string | null;
+    longitud?: string | null;
 }
+
+// Las columnas decimal llegan como string: se devuelven como numero (o null)
+const coord = (v: string | null) => (v === null ? null : Number(v));
+const conCoordenadas = <T extends { latitud: string | null; longitud: string | null }>(f: T) =>
+    ({ ...f, latitud: coord(f.latitud), longitud: coord(f.longitud) });
 
 interface FiltrosProyecto {
     estadoProyectoID?: number;
@@ -48,6 +56,8 @@ export class Proyecto {
             constructoraContacto: constructoras.contacto,
             constructoraTelefono: constructoras.telefono,
             constructoraCorreo: constructoras.correo,
+            latitud: proyectos.latitud,
+            longitud: proyectos.longitud,
         })
         .from(proyectos)
         .innerJoin(estadosproyecto, eq(proyectos.estadoProyectoID, estadosproyecto.estadoProyectoID))
@@ -63,7 +73,7 @@ export class Proyecto {
         .from(imagenesproyecto)
         .where(eq(imagenesproyecto.proyectoID, this._idProyecto!));
 
-        return {...proyecto, imagenes: imagenes,};
+        return {...conCoordenadas(proyecto), imagenes: imagenes,};
     }
 
 
@@ -245,6 +255,8 @@ export class Proyecto {
             descripcion: proyecto.descripcion,
             ubicacion: proyecto.ubicacion,
             inmobiliariaID: proyecto.inmobiliariaID ?? null,
+            latitud: proyecto.latitud ?? null,
+            longitud: proyecto.longitud ?? null,
         });
         this._idProyecto = Number((resultado as any).insertId ?? 0) || null;
         return (resultado as any).affectedRows ?? 0;
@@ -270,6 +282,8 @@ public async ActualizarProyecto(): Promise<number> {
     if (proyecto.descripcion !== undefined)      datos.descripcion = proyecto.descripcion;
     if (proyecto.ubicacion !== undefined)        datos.ubicacion = proyecto.ubicacion;
     if (proyecto.inmobiliariaID !== undefined)   datos.inmobiliariaID = proyecto.inmobiliariaID;
+    if (proyecto.latitud !== undefined)          datos.latitud = proyecto.latitud;
+    if (proyecto.longitud !== undefined)         datos.longitud = proyecto.longitud;
 
     const [resultado] = await db
         .update(proyectos)
@@ -394,6 +408,8 @@ public async ActualizarProyecto(): Promise<number> {
             constructoraID: proyectos.constructoraID,
             estadoProyecto: estadosproyecto.descripcion,
             constructoraNombre: constructoras.nombre,
+            latitud: proyectos.latitud,
+            longitud: proyectos.longitud,
         })
             .from(proyectos)
             .innerJoin(estadosproyecto, eq(proyectos.estadoProyectoID, estadosproyecto.estadoProyectoID))
@@ -407,7 +423,7 @@ public async ActualizarProyecto(): Promise<number> {
             case "fecha": resultados = await query.orderBy(desc(proyectos.fechaInicio)); break;
             default: resultados = await query;
         }
-        return await this.AdjuntarImagenPrincipal(resultados);
+        return await this.AdjuntarImagenPrincipal(resultados.map(conCoordenadas));
     }
 
     // Para verificar ownership
