@@ -64,5 +64,6 @@ routes.forEach(router => {
 });
 
 iniciarRecordatorios();
-console.log("Servidor corriendo por el puerto 8001");
-app.listen({ port: 8001 });
+const PORT = Number(Deno.env.get("PORT") ?? 8001);
+console.log(`Servidor corriendo por el puerto ${PORT}`);
+await app.listen({ port: PORT });
