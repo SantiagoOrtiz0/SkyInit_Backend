@@ -1,10 +1,13 @@
 import { Router } from "../Dependencies/dependencias.ts";
-import { getInmobiliariaPublica } from "../Controller/inmobiliariaPublicaController.ts";
+import {
+    getInmobiliariaPublica,
+    getInmobiliariasPublicas,
+} from "../Controller/inmobiliariaPublicaController.ts";
 
 const inmobiliariaPublicaRouter = new Router();
 
-// Perfil publico de la inmobiliaria (sin autenticacion), usado desde el
-// catalogo de servicios para mostrar quien ofrece cada servicio.
+// Listado y perfil publico de inmobiliarias (sin autenticacion)
+inmobiliariaPublicaRouter.get("/api/inmobiliarias", getInmobiliariasPublicas);
 inmobiliariaPublicaRouter.get("/api/inmobiliarias/:id", getInmobiliariaPublica);
 
 export { inmobiliariaPublicaRouter };

@@ -24,6 +24,25 @@ export interface ServicioDeInmobiliaria {
     imagen: string | null;
 }
 
+// Lista publica de todas las inmobiliarias activas
+export async function listarInmobiliariasPublicas(): Promise<InmobiliariaPublica[]> {
+    const rows = await db
+        .select({
+            inmobiliariaID: inmobiliarias.inmobiliariaID,
+            nombre: inmobiliarias.nombre,
+            logo: inmobiliarias.logo,
+            descripcion: inmobiliarias.descripcion,
+            contacto: inmobiliarias.contacto,
+            telefono: inmobiliarias.telefono,
+            correo: inmobiliarias.correo,
+            ciudad: inmobiliarias.ciudad,
+        })
+        .from(inmobiliarias)
+        .where(eq(inmobiliarias.estado, "Activa"));
+
+    return rows as InmobiliariaPublica[];
+}
+
 // Trae los datos publicos de una inmobiliaria por su ID (null si no existe)
 export async function obtenerInmobiliariaPublicaPorId(
     inmobiliariaID: number,

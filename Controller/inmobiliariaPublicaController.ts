@@ -1,8 +1,30 @@
 import { RouterContext } from "../Dependencies/dependencias.ts";
 import {
+    listarInmobiliariasPublicas,
     obtenerInmobiliariaPublicaPorId,
     obtenerServiciosActivosDeInmobiliaria,
 } from "../Model/inmobiliariaPublicaModel.ts";
+
+// GET /api/inmobiliarias
+// Listado publico de inmobiliarias activas (sin autenticacion).
+export async function getInmobiliariasPublicas(ctx: RouterContext<string>) {
+    const { response } = ctx;
+    try {
+        const lista = await listarInmobiliariasPublicas();
+        response.status = 200;
+        response.body = {
+            ok: true,
+            data: lista,
+        };
+    } catch (error) {
+        console.error("[getInmobiliariasPublicas] Error:", error);
+        response.status = 500;
+        response.body = {
+            ok: false,
+            message: "Error interno al listar inmobiliarias.",
+        };
+    }
+}
 
 // GET /api/inmobiliarias/:id
 // Perfil publico de una inmobiliaria: datos de contacto + sus servicios activos.
