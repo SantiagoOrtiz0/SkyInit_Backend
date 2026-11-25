@@ -31,6 +31,7 @@ const columnas = {
   servicioDescripcion: serviciosmantenimiento.descripcion,
   clienteID: usuarios.usuarioID, cliente: usuarios.nombre, clienteTelefono: usuarios.telefono, clienteCorreo: usuarios.correo,
   propiedad: propiedades.titulo, direccion: propiedades.direccion, ciudad: propiedades.ciudad,
+  latitud: propiedades.latitud, longitud: propiedades.longitud,
   constructoraID: serviciossolicitados.constructoraID, constructora: constructoras.nombre,
 };
 

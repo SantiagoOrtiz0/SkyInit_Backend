@@ -311,3 +311,78 @@ export async function metricasInteres(ctx: any) {
     error(ctx, 500, "No se pudieron cargar las metricas");
   }
 }
+
+// GET /api/agente/interes   (Agente): metricas de interes de las propiedades de su inmobiliaria
+export async function metricasInteresAgente(ctx: any) {
+  try {
+    const uid = usuarioId(ctx);
+    const [u] = await db.select({
+      inmobiliariaID: usuarios.inmobiliariaID, estado: usuarios.estadoCuenta,
+    }).from(usuarios).where(eq(usuarios.usuarioID, uid)).limit(1);
+    if (!u || u.estado !== "Activa" || !u.inmobiliariaID) {
+      return error(ctx, 403, "No tienes una inmobiliaria activa asignada");
+    }
+
+    const props = await db.select({
+      propiedadID: propiedades.propiedadID, titulo: propiedades.titulo, ciudad: propiedades.ciudad,
+      direccion: propiedades.direccion, precio: propiedades.precio, estado: propiedades.estado,
+      agenteID: propiedades.agenteID, agente: usuarios.nombre,
+    }).from(propiedades).leftJoin(usuarios, eq(propiedades.agenteID, usuarios.usuarioID))
+      .where(eq(propiedades.inmobiliariaID, u.inmobiliariaID)).orderBy(asc(propiedades.titulo));
+    const ids = props.map((p) => p.propiedadID);
+    if (!ids.length) { ctx.response.body = { propiedades: [] }; return; }
+
+    const porId = <T extends { propiedadID: number | null }>(filas: T[]) => new Map(filas.map((f) => [f.propiedadID, f]));
+    const [vistasArr, favsArr, citasArr, comsArr, calsArr] = await Promise.all([
+      db.select({
+        propiedadID: interespropiedad.propiedadID,
+        vistas: sql<number>`SUM(CASE WHEN ${interespropiedad.tipo} = 'vista' THEN 1 ELSE 0 END)`,
+        mapa: sql<number>`SUM(CASE WHEN ${interespropiedad.tipo} = 'mapa' THEN 1 ELSE 0 END)`,
+        unicos: sql<number>`COUNT(DISTINCT ${interespropiedad.usuarioID})`,
+      }).from(interespropiedad).where(inArray(interespropiedad.propiedadID, ids)).groupBy(interespropiedad.propiedadID),
+      db.select({ propiedadID: favoritos.propiedadID, n: sql<number>`COUNT(*)` })
+        .from(favoritos).where(inArray(favoritos.propiedadID, ids)).groupBy(favoritos.propiedadID),
+      db.select({
+        propiedadID: agendas.propiedadID,
+        n: sql<number>`COUNT(*)`,
+        pendientes: sql<number>`SUM(CASE WHEN ${agendas.estadoAgendaID} = 1 THEN 1 ELSE 0 END)`,
+      }).from(agendas).where(inArray(agendas.propiedadID, ids)).groupBy(agendas.propiedadID),
+      db.select({ propiedadID: comentarios.propiedadID, n: sql<number>`COUNT(*)` })
+        .from(comentarios).where(inArray(comentarios.propiedadID, ids)).groupBy(comentarios.propiedadID),
+      db.select({
+        propiedadID: calificaciones.propiedadID, n: sql<number>`COUNT(*)`, promedio: sql<string | null>`AVG(${calificaciones.puntaje})`,
+      }).from(calificaciones).where(inArray(calificaciones.propiedadID, ids)).groupBy(calificaciones.propiedadID),
+    ]);
+
+    const vistas = porId(vistasArr);
+    const favs = porId(favsArr);
+    const citas = porId(citasArr);
+    const coms = porId(comsArr);
+    const cals = porId(calsArr);
+
+    const resultado = props.map((p) => {
+      const v = vistas.get(p.propiedadID);
+      const ci = citas.get(p.propiedadID);
+      const c = cals.get(p.propiedadID);
+      const fila = {
+        ...p,
+        esMia: Number(p.agenteID) === uid,
+        vistas: Number(v?.vistas ?? 0),
+        clicsMapa: Number(v?.mapa ?? 0),
+        usuariosUnicos: Number(v?.unicos ?? 0),
+        guardados: Number(favs.get(p.propiedadID)?.n ?? 0),
+        citas: Number(ci?.n ?? 0),
+        citasPendientes: Number(ci?.pendientes ?? 0),
+        comentarios: Number(coms.get(p.propiedadID)?.n ?? 0),
+        calificaciones: Number(c?.n ?? 0),
+        promedio: c?.promedio ? Math.round(Number(c.promedio) * 10) / 10 : null,
+      };
+      return { ...fila, interesTotal: fila.vistas + fila.clicsMapa + fila.guardados + fila.citas + fila.comentarios + fila.calificaciones };
+    }).sort((a, b) => b.interesTotal - a.interesTotal);
+
+    ctx.response.body = { propiedades: resultado };
+  } catch (e) {
+    console.error("Error en metricasInteresAgente:", e);
+    error(ctx, 500, "No se pudieron cargar las metricas");
+  }
+}

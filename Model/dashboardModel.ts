@@ -1,9 +1,10 @@
-import { and, eq, sql } from "../Dependencies/dependencias.ts";
+import { and, desc, eq, isNull, or, sql } from "../Dependencies/dependencias.ts";
 import { db } from "./conexion.ts";
 import {
   constructoras,
   constructorasInmobiliarias,
   estadosreparacion,
+  imagenespropiedad,
   propiedades,
   proyectos,
   serviciosmantenimiento,
@@ -199,6 +200,32 @@ export async function obtenerResumenSuperAdmin() {
     .from(constructoras)
     .groupBy(constructoras.estado);
 
+  const [inmoPendientes, consPendientes, actividadReciente] = await Promise.all([
+    db.select({
+      inmobiliariaID: inmobiliarias.inmobiliariaID,
+      nombre: inmobiliarias.nombre,
+      ciudad: inmobiliarias.ciudad,
+      contacto: inmobiliarias.contacto,
+      correo: inmobiliarias.correo,
+      fechaRegistro: inmobiliarias.fechaRegistro,
+    }).from(inmobiliarias).where(eq(inmobiliarias.estado, "Pendiente")).orderBy(desc(inmobiliarias.fechaRegistro)).limit(10),
+    db.select({
+      constructoraID: constructoras.constructoraID,
+      nombre: constructoras.nombre,
+      ciudad: constructoras.ciudad,
+      contacto: constructoras.contacto,
+      correo: constructoras.correo,
+    }).from(constructoras).where(eq(constructoras.estado, "Pendiente")).limit(10),
+    db.select({
+      usuarioID: usuarios.usuarioID,
+      nombre: usuarios.nombre,
+      correo: usuarios.correo,
+      nombreRol: roles.nombreRol,
+      estadoCuenta: usuarios.estadoCuenta,
+      fechaRegistro: usuarios.fechaRegistro,
+    }).from(usuarios).innerJoin(roles, eq(usuarios.rolID, roles.rolID)).orderBy(desc(usuarios.fechaRegistro)).limit(8),
+  ]);
+
   return {
     totales: {
       usuarios: Number(totalUsuarios?.total ?? 0),
@@ -224,6 +251,11 @@ export async function obtenerResumenSuperAdmin() {
       estado: r.estado,
       total: Number(r.total),
     })),
+    pendientes: {
+      inmobiliarias: inmoPendientes,
+      constructoras: consPendientes,
+    },
+    actividadReciente,
   };
 }
 async function obtenerEstadisticasServicios(inmobiliariaID: number) {
@@ -319,7 +351,26 @@ export async function obtenerResumenInmobiliaria(inmobiliariaID: number) {
     .groupBy(proyectos.estadoProyectoID);
 
 
-  const servicios = await obtenerEstadisticasServicios(inmobiliariaID);
+  const [servicios, [sinFotos], [sinAgente], [sols24h], [consPend]] = await Promise.all([
+    obtenerEstadisticasServicios(inmobiliariaID),
+    db.select({ total: sql<number>`count(*)` }).from(propiedades)
+      .where(and(
+        eq(propiedades.inmobiliariaID, inmobiliariaID),
+        sql`NOT EXISTS (SELECT 1 FROM ${imagenespropiedad} ip WHERE ip.PropiedadID = ${propiedades.propiedadID})`,
+      )),
+    db.select({ total: sql<number>`count(*)` }).from(propiedades)
+      .where(and(eq(propiedades.inmobiliariaID, inmobiliariaID), isNull(propiedades.agenteID))),
+    db.select({ total: sql<number>`count(*)` }).from(serviciossolicitados)
+      .where(and(
+        eq(serviciossolicitados.inmobiliariaID, inmobiliariaID),
+        or(isNull(serviciossolicitados.estadoReparacionID), eq(serviciossolicitados.estadoReparacionID, 1)),
+        sql`${serviciossolicitados.fechaSolicitud} < DATE_SUB(NOW(), INTERVAL 24 HOUR)`,
+      )),
+    db.select({ total: sql<number>`count(*)` }).from(constructorasInmobiliarias)
+      .innerJoin(constructoras, eq(constructorasInmobiliarias.constructoraID, constructoras.constructoraID))
+      .where(and(eq(constructorasInmobiliarias.inmobiliariaID, inmobiliariaID), eq(constructoras.estado, "Pendiente"))),
+  ]);
+
   return {
     totales: {
       propiedades: Number(totalPropiedades.total),
@@ -339,5 +390,11 @@ export async function obtenerResumenInmobiliaria(inmobiliariaID: number) {
       total: Number(r.total),
     })),
     solicitudesServiciosPorEstado: servicios.solicitudesPorEstado,
+    alertas: {
+      propiedadesSinFotos: Number(sinFotos?.total ?? 0),
+      propiedadesSinAgente: Number(sinAgente?.total ?? 0),
+      solicitudesSinAceptar24h: Number(sols24h?.total ?? 0),
+      constructorasPendientes: Number(consPend?.total ?? 0),
+    },
   };
 }

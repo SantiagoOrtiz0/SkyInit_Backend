@@ -3,11 +3,12 @@ import { authMiddleware, rolMiddleware } from "../Middlewares/validarJWT.ts";
 import { constructoraScopeMiddleware } from "../Middlewares/constructoraScope.ts";
 import { listarNotificaciones, marcarLeida, marcarTodasLeidas } from "../Controller/notificacionesController.ts";
 import {
-  cambiarEstadoVisita, crearCita, crearVisita, editarCita, misVisitas, propiedadesParaCita, visitasGestion,
+  cambiarEstadoVisita, crearCita, crearVisita, editarCita, misVisitas, propiedadesParaCita, reprogramarVisita, visitasGestion,
 } from "../Controller/agendaController.ts";
 import {
-  calificar, comentar, detallePropiedad, detalleProyecto, detalleServicio, eliminarComentario, metricasInteres, registrarInteres,
+  calificar, comentar, detallePropiedad, detalleProyecto, detalleServicio, eliminarComentario, metricasInteres, metricasInteresAgente, registrarInteres,
 } from "../Controller/interaccionController.ts";
+import { aprobarEntidadPendiente } from "../Controller/dashboardController.ts";
 import { cambiarEstadoAgente, crearAgente, editarAgente, listarAgentesInmobiliaria } from "../Controller/agentesAdminController.ts";
 import {
   asignarTrabajadores, historialSolicitud, reenviarAConstructora, registrarAvanceTrabajo, solicitudesConstructora,
@@ -37,6 +38,7 @@ funcionesRouter
   .get("/api/agenda/mias", authMiddleware, misVisitas)
   .get("/api/agenda/gestion", authMiddleware, rolMiddleware("Administrador", "Agente"), visitasGestion)
   .patch("/api/agenda/:id/estado", authMiddleware, cambiarEstadoVisita)
+  .patch("/api/agenda/:id/reprogramar", authMiddleware, reprogramarVisita)
   .get("/api/agenda/propiedades", authMiddleware, rolMiddleware("Administrador", "Agente"), propiedadesParaCita)
   .post("/api/agenda/citas", authMiddleware, rolMiddleware("Administrador", "Agente"), crearCita)
   .put("/api/agenda/:id", authMiddleware, rolMiddleware("Administrador", "Agente"), editarCita)
@@ -56,6 +58,8 @@ funcionesRouter
   .put("/api/admin/agentes/:id", authMiddleware, rolMiddleware("Administrador"), editarAgente)
   .patch("/api/admin/agentes/:id/estado", authMiddleware, rolMiddleware("Administrador"), cambiarEstadoAgente)
   .get("/api/admin/interes", authMiddleware, rolMiddleware("Administrador"), metricasInteres)
+  .get("/api/agente/interes", authMiddleware, rolMiddleware("Agente"), metricasInteresAgente)
+  .patch("/api/superadmin/aprobar", authMiddleware, rolMiddleware("SuperAdmin"), aprobarEntidadPendiente)
 
   // Mantenimiento: inmobiliaria -> constructora -> trabajadores
   .get("/api/mantenimiento/admin", authMiddleware, rolMiddleware("Administrador"), solicitudesInmobiliaria)

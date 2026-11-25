@@ -1,7 +1,7 @@
 // deno-lint-ignore-file no-explicit-any
-import { and, asc, bcrypt, eq, ne, sql } from "../Dependencies/dependencias.ts";
+import { and, asc, bcrypt, eq, isNull, ne, sql } from "../Dependencies/dependencias.ts";
 import { db } from "../Model/conexion.ts";
-import { usuarios } from "../Model/schema.ts";
+import { propiedades, usuarios } from "../Model/schema.ts";
 import { obtenerInmobiliariaScope, ScopeError } from "../Middlewares/inmobiliariasScope.ts";
 
 /** Gestion de agentes por el Administrador: siempre dentro de SU inmobiliaria. */
@@ -28,14 +28,28 @@ const deMiInmobiliaria = (id: number, inmo: number) =>
 
 // GET /api/admin/agentes
 export const listarAgentesInmobiliaria = (ctx: any) => conScope(ctx, async (inmo) => {
-  const lista = await db.select({
-    usuarioID: usuarios.usuarioID, nombre: usuarios.nombre, correo: usuarios.correo, telefono: usuarios.telefono,
-    estadoCuenta: usuarios.estadoCuenta, fotoPerfil: usuarios.fotoPerfil, fechaRegistro: usuarios.fechaRegistro,
-    propiedades: sql<number>`(SELECT COUNT(*) FROM propiedades p WHERE p.AgenteID = ${usuarios.usuarioID})`,
-    citasPendientes: sql<number>`(SELECT COUNT(*) FROM agendas a JOIN propiedades p ON p.PropiedadID = a.PropiedadID
-                                  WHERE p.AgenteID = ${usuarios.usuarioID} AND a.EstadoAgendaID = 1)`,
-  }).from(usuarios).where(and(eq(usuarios.rolID, ROL_AGENTE), eq(usuarios.inmobiliariaID, inmo))).orderBy(asc(usuarios.nombre));
-  ctx.response.body = { agentes: lista.map((a) => ({ ...a, propiedades: Number(a.propiedades), citasPendientes: Number(a.citasPendientes) })) };
+  const [lista, [sinAgente]] = await Promise.all([
+    db.select({
+      usuarioID: usuarios.usuarioID, nombre: usuarios.nombre, correo: usuarios.correo, telefono: usuarios.telefono,
+      estadoCuenta: usuarios.estadoCuenta, fotoPerfil: usuarios.fotoPerfil, fechaRegistro: usuarios.fechaRegistro,
+      propiedades: sql<number>`(SELECT COUNT(*) FROM propiedades p WHERE p.AgenteID = ${usuarios.usuarioID})`,
+      citasPendientes: sql<number>`(SELECT COUNT(*) FROM agendas a JOIN propiedades p ON p.PropiedadID = a.PropiedadID
+                                    WHERE p.AgenteID = ${usuarios.usuarioID} AND a.EstadoAgendaID = 1)`,
+      citasVencidas: sql<number>`(SELECT COUNT(*) FROM agendas a JOIN propiedades p ON p.PropiedadID = a.PropiedadID
+                                  WHERE p.AgenteID = ${usuarios.usuarioID} AND a.EstadoAgendaID = 1 AND a.FechaVisita < NOW())`,
+    }).from(usuarios).where(and(eq(usuarios.rolID, ROL_AGENTE), eq(usuarios.inmobiliariaID, inmo))).orderBy(asc(usuarios.nombre)),
+    db.select({ total: sql<number>`COUNT(*)` }).from(propiedades)
+      .where(and(eq(propiedades.inmobiliariaID, inmo), isNull(propiedades.agenteID))),
+  ]);
+  ctx.response.body = {
+    agentes: lista.map((a) => ({
+      ...a,
+      propiedades: Number(a.propiedades),
+      citasPendientes: Number(a.citasPendientes),
+      citasVencidas: Number(a.citasVencidas),
+    })),
+    propiedadesSinAgente: Number(sinAgente?.total ?? 0),
+  };
 });
 
 // POST /api/admin/agentes  { nombre, correo, password, telefono? }

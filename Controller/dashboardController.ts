@@ -1,7 +1,9 @@
-import { Context } from "../Dependencies/dependencias.ts";
+import { Context, eq } from "../Dependencies/dependencias.ts";
 import { obtenerResumenInmobiliaria, obtenerResumenAgente, obtenerResumenSuperAdmin } from "../Model/dashboardModel.ts";
 import { obtenerInmobiliariaScope, ScopeError } from "../Middlewares/inmobiliariasScope.ts";
 import { buscarPorId } from "../Model/usuarioModel.ts";
+import { db } from "../Model/conexion.ts";
+import { constructoras, inmobiliarias } from "../Model/schema.ts";
 
 export const obtenerDashboardAdmin = async (ctx:Context) => {
     try {
@@ -72,5 +74,30 @@ export const obtenerDashboardSuperAdmin = async (ctx: Context) => {
         console.error(error);
         ctx.response.status = 500;
         ctx.response.body = { error: "Error al obtener dashboard SuperAdmin" };
+    }
+};
+
+// PATCH /api/superadmin/aprobar  { tipo: "inmobiliaria" | "constructora", id: number }
+export const aprobarEntidadPendiente = async (ctx: Context) => {
+    try {
+        const body = await ctx.request.body.json().catch(() => ({}));
+        const tipo = String(body.tipo ?? "");
+        const id = Number(body.id);
+        if (!Number.isInteger(id) || id <= 0 || (tipo !== "inmobiliaria" && tipo !== "constructora")) {
+            ctx.response.status = 400;
+            ctx.response.body = { error: "Datos invalidos para aprobar" };
+            return;
+        }
+        if (tipo === "inmobiliaria") {
+            await db.update(inmobiliarias).set({ estado: "Activa" }).where(eq(inmobiliarias.inmobiliariaID, id));
+        } else {
+            await db.update(constructoras).set({ estado: "Activo" }).where(eq(constructoras.constructoraID, id));
+        }
+        ctx.response.status = 200;
+        ctx.response.body = { mensaje: tipo === "inmobiliaria" ? "Inmobiliaria activada" : "Constructora activada" };
+    } catch (error) {
+        console.error("Error en aprobarEntidadPendiente:", error);
+        ctx.response.status = 500;
+        ctx.response.body = { error: "No se pudo activar el registro" };
     }
 };

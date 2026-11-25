@@ -308,3 +308,48 @@ export async function editarCita(ctx: any) {
     error(ctx, 500, "No se pudo actualizar la cita");
   }
 }
+
+// PATCH /api/agenda/:id/reprogramar  { fechaVisita, notas? } (el usuario solicitante reprograma una visita Pendiente)
+export async function reprogramarVisita(ctx: any) {
+  try {
+    const agendaID = Number(ctx.params.id);
+    if (!Number.isInteger(agendaID)) return error(ctx, 400, "ID invalido");
+    const body = await ctx.request.body.json().catch(() => ({}));
+    const nuevaFecha = new Date(body.fechaVisita);
+    if (Number.isNaN(nuevaFecha.getTime())) return error(ctx, 400, "La nueva fecha no es valida");
+    if (nuevaFecha.getTime() < Date.now() + 60 * 60 * 1000) {
+      return error(ctx, 400, "La visita debe reprogramarse con al menos una hora de anticipacion");
+    }
+    if (body.notas !== undefined && body.notas && String(body.notas).length > 300) {
+      return error(ctx, 400, "Las notas no pueden superar 300 caracteres");
+    }
+
+    const id = usuarioId(ctx);
+    const [visita] = await consultaBase().where(and(eq(agendas.agendaID, agendaID), eq(agendas.usuarioID, id))).limit(1);
+    if (!visita) return error(ctx, 404, "Visita no encontrada");
+    if (visita.estadoAgendaID !== ESTADO.Pendiente) {
+      return error(ctx, 409, "Solo puedes reprogramar visitas en estado pendiente");
+    }
+
+    const datos: Record<string, unknown> = { fechaVisita: nuevaFecha, recordatorioEnviado: 0 };
+    if (body.notas !== undefined) datos.notas = body.notas ? String(body.notas).trim() : null;
+    await db.update(agendas).set(datos).where(eq(agendas.agendaID, agendaID));
+
+    const [prop] = await db.select({ agenteID: propiedades.agenteID, inmobiliariaID: propiedades.inmobiliariaID })
+      .from(propiedades).where(eq(propiedades.propiedadID, visita.propiedadID)).limit(1);
+    const admins = prop?.inmobiliariaID
+      ? await db.select({ id: usuarios.usuarioID }).from(usuarios)
+        .where(and(eq(usuarios.rolID, 1), eq(usuarios.inmobiliariaID, prop.inmobiliariaID), eq(usuarios.estadoCuenta, "Activa")))
+      : [];
+    await notificar([prop?.agenteID, ...admins.map((a) => a.id)], {
+      titulo: "Visita reprogramada por el cliente",
+      mensaje: `${visita.solicitante} reprogramo la visita a "${visita.propiedad}" para el ${fmt(nuevaFecha)}.`,
+      tipo: "agenda", entidadID: agendaID, entidadTipo: "agenda",
+    });
+
+    ctx.response.body = { mensaje: "Visita reprogramada correctamente" };
+  } catch (e) {
+    console.error("Error en reprogramarVisita:", e);
+    error(ctx, 500, "No se pudo reprogramar la visita");
+  }
+}
