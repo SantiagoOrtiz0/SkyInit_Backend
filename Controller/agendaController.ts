@@ -12,6 +12,22 @@ const error = (ctx: any, status: number, mensaje: string) => {
   ctx.response.body = { error: mensaje };
 };
 const fmt = (f: Date) => f.toLocaleString("es-CO", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Bogota" });
+const MSG_HORARIO = "Las visitas solo se pueden agendar entre 7:00 a. m. y 7:00 p. m.";
+const fmtHoraCo = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/Bogota",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Valida que la fecha corresponda al horario de atención (07:00 a 19:00, hora de Colombia) */
+function enHorarioAtencion(fecha: Date): boolean {
+  const partes = fmtHoraCo.formatToParts(fecha);
+  const hora = Number(partes.find((p) => p.type === "hour")?.value);
+  const minuto = Number(partes.find((p) => p.type === "minute")?.value);
+  const minutos = hora * 60 + minuto;
+  return minutos >= 7 * 60 && minutos <= 19 * 60;
+}
 
 const columnas = {
   agendaID: agendas.agendaID,
@@ -50,6 +66,7 @@ export async function crearVisita(ctx: any) {
     if (fecha.getTime() < Date.now() + 60 * 60 * 1000) {
       return error(ctx, 400, "La visita debe agendarse con al menos una hora de anticipacion");
     }
+    if (!enHorarioAtencion(fecha)) return error(ctx, 400, MSG_HORARIO);
     if (notas && String(notas).length > 300) return error(ctx, 400, "Las notas no pueden superar 300 caracteres");
 
     const [prop] = await db.select({
@@ -229,6 +246,7 @@ export async function crearCita(ctx: any) {
     const body = await ctx.request.body.json().catch(() => ({}));
     const fecha = new Date(body.fechaVisita);
     if (Number.isNaN(fecha.getTime()) || fecha.getTime() < Date.now()) return error(ctx, 400, "La fecha de la cita debe ser futura");
+    if (!enHorarioAtencion(fecha)) return error(ctx, 400, MSG_HORARIO);
     if (body.notas && String(body.notas).length > 300) return error(ctx, 400, "Las notas no pueden superar 300 caracteres");
     const prop = await propiedadGestionable(ctx, Number(body.propiedadID));
     if (!prop) return error(ctx, 403, "No puedes crear citas para esa propiedad");
@@ -281,6 +299,7 @@ export async function editarCita(ctx: any) {
     if (body.fechaVisita !== undefined) {
       nuevaFecha = new Date(body.fechaVisita);
       if (Number.isNaN(nuevaFecha.getTime()) || nuevaFecha.getTime() < Date.now()) return error(ctx, 400, "La fecha de la cita debe ser futura");
+      if (!enHorarioAtencion(nuevaFecha)) return error(ctx, 400, MSG_HORARIO);
       if (nuevaFecha.getTime() !== new Date(visita.fechaVisita).getTime()) {
         datos.fechaVisita = nuevaFecha;
         datos.recordatorioEnviado = 0; // la nueva fecha vuelve a generar recordatorio
@@ -320,6 +339,7 @@ export async function reprogramarVisita(ctx: any) {
     if (nuevaFecha.getTime() < Date.now() + 60 * 60 * 1000) {
       return error(ctx, 400, "La visita debe reprogramarse con al menos una hora de anticipacion");
     }
+    if (!enHorarioAtencion(nuevaFecha)) return error(ctx, 400, MSG_HORARIO);
     if (body.notas !== undefined && body.notas && String(body.notas).length > 300) {
       return error(ctx, 400, "Las notas no pueden superar 300 caracteres");
     }

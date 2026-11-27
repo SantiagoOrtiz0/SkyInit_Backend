@@ -33,6 +33,7 @@ const columnas = {
   propiedad: propiedades.titulo, direccion: propiedades.direccion, ciudad: propiedades.ciudad,
   latitud: propiedades.latitud, longitud: propiedades.longitud,
   constructoraID: serviciossolicitados.constructoraID, constructora: constructoras.nombre,
+  fechaProgramada: serviciossolicitados.fechaProgramada,
 };
 
 function consulta() {
@@ -145,7 +146,7 @@ export async function solicitudesConstructora(ctx: any) {
   ctx.response.body = { solicitudes: await conTrabajadores(lista) };
 }
 
-// POST /api/mantenimiento/constructora/:id/asignar  { trabajadores: number[] }
+// POST /api/mantenimiento/constructora/:id/asignar  { modo?: "individual"|"grupo", trabajadores: number[] }
 export async function asignarTrabajadores(ctx: any) {
   try {
     const solicitudID = Number(ctx.params.id);
@@ -155,6 +156,22 @@ export async function asignarTrabajadores(ctx: any) {
       : [];
     if (!pedidos.length) return error(ctx, 400, "Selecciona al menos un trabajador");
     if (pedidos.length > 20) return error(ctx, 400, "Maximo 20 trabajadores por trabajo");
+
+    // Validación por modo de asignación
+    const modoAsignacion: string | undefined = body.modo;
+    if (modoAsignacion === "individual" && pedidos.length !== 1) {
+      return error(ctx, 400, "Para asignación individual selecciona un solo trabajador");
+    }
+    if (modoAsignacion === "grupo" && pedidos.length < 2) {
+      return error(ctx, 400, "Para un grupo selecciona al menos 2 trabajadores");
+    }
+
+    let fechaProg: Date | null = null;
+    if (body.fechaProgramada !== undefined && body.fechaProgramada !== null && body.fechaProgramada !== "") {
+      fechaProg = new Date(body.fechaProgramada);
+      if (Number.isNaN(fechaProg.getTime())) return error(ctx, 400, "La fecha programada no es valida");
+      if (fechaProg.getTime() < Date.now()) return error(ctx, 400, "La fecha programada no puede estar en el pasado");
+    }
 
     const [sol] = await consulta().where(and(
       eq(serviciossolicitados.solicitudID, solicitudID), eq(serviciossolicitados.constructoraID, constructoraId(ctx)),
@@ -172,19 +189,34 @@ export async function asignarTrabajadores(ctx: any) {
       .where(eq(trabajadoressolicitud.solicitudID, solicitudID))).map((p) => p.id);
     await db.delete(trabajadoressolicitud).where(eq(trabajadoressolicitud.solicitudID, solicitudID));
     await db.insert(trabajadoressolicitud).values(validos.map((v) => ({ solicitudID, trabajadorID: v.id })));
-    await anotar(solicitudID, usuarioId(ctx), `Grupo asignado: ${validos.map((v) => v.nombre).join(", ")}.`);
+    if (fechaProg) {
+      await db.update(serviciossolicitados).set({ fechaProgramada: fechaProg }).where(eq(serviciossolicitados.solicitudID, solicitudID));
+    }
 
+    const esIndividual = validos.length === 1;
+    const textoHistorial = esIndividual
+      ? `Trabajador asignado: ${validos[0].nombre}.`
+      : `Grupo asignado: ${validos.map((v) => v.nombre).join(", ")}.`;
+    await anotar(solicitudID, usuarioId(ctx), textoHistorial);
+
+    const fechaEfectiva = fechaProg ?? (sol.fechaProgramada ? new Date(sol.fechaProgramada) : null);
+    const textoFecha = fechaEfectiva
+      ? ` Programado para: ${fechaEfectiva.toLocaleString("es-CO", { dateStyle: "full", timeStyle: "short", timeZone: "America/Bogota" })}.`
+      : "";
     await notificar(validos.filter((v) => !previos.includes(v.id)).map((v) => v.id), {
       titulo: "Nuevo trabajo de mantenimiento",
-      mensaje: `Te asignaron el servicio "${sol.servicio}" para ${sol.cliente}${sol.direccion ? ` en ${sol.direccion}` : ""}.`,
+      mensaje: `Te asignaron el servicio "${sol.servicio}" para ${sol.cliente}${sol.direccion ? ` en ${sol.direccion}` : ""}.${textoFecha}`,
       tipo: "mantenimiento", entidadID: solicitudID, entidadTipo: "solicitud",
     });
+    const textoNotif = esIndividual
+      ? `${sol.constructora ?? "La constructora"} asigno a ${validos[0].nombre} al servicio "${sol.servicio}".`
+      : `${sol.constructora ?? "La constructora"} asigno ${validos.length} trabajadores al servicio "${sol.servicio}".`;
     await notificar(await adminsDe(sol.inmobiliariaID), {
-      titulo: "Trabajadores asignados",
-      mensaje: `${sol.constructora ?? "La constructora"} asigno ${validos.length} trabajador(es) al servicio "${sol.servicio}".`,
+      titulo: esIndividual ? "Trabajador asignado" : "Trabajadores asignados",
+      mensaje: textoNotif,
       tipo: "mantenimiento", entidadID: solicitudID, entidadTipo: "solicitud",
     });
-    ctx.response.body = { mensaje: "Grupo de trabajadores asignado" };
+    ctx.response.body = { mensaje: esIndividual ? "Trabajador asignado" : "Grupo de trabajadores asignado" };
   } catch (e) {
     console.error("Error en asignarTrabajadores:", e);
     error(ctx, 500, "No se pudo asignar el grupo");
