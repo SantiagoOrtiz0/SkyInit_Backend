@@ -172,6 +172,16 @@ PREPARE stmt FROM @sql_fk3; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 -- =============================================
 INSERT IGNORE INTO estadosagenda (EstadoAgendaID, Descripcion) VALUES (4, 'Finalizada');
 
+-- =============================================
+-- MIGRACION 004
+-- =============================================
+SET @exist_col_fp = (SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE table_schema = DATABASE() AND table_name = 'serviciossolicitados' AND column_name = 'FechaProgramada');
+SET @sql_col_fp = IF(@exist_col_fp = 0,
+  'ALTER TABLE serviciossolicitados ADD COLUMN FechaProgramada DATETIME NULL',
+  'SELECT 1');
+PREPARE stmt FROM @sql_col_fp; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 SELECT 'Migraciones aplicadas correctamente' AS resultado;

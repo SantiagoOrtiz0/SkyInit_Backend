@@ -356,6 +356,7 @@ export const serviciossolicitados = mysqlTable("serviciossolicitados", {
   ),
   constructoraID: int("ConstructoraID"),
   fechaReenvio: datetime("FechaReenvio"),
+  fechaProgramada: datetime("FechaProgramada"),
 });
 
 export const reparaciones = mysqlTable("reparaciones", {
